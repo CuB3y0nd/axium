@@ -1,27 +1,15 @@
 #include <axium/tubes/process.h>
-#include <stdio.h>
-#include <string.h>
+#include <test_common.h>
 
-#define ASSERT_TRUE(condition, message)                                        \
-  do {                                                                         \
-    if (!(condition)) {                                                        \
-      fprintf(stderr, "Assertion failed: %s at %s:%d - %s\n", #condition,      \
-              __FILE__, __LINE__, message);                                    \
-      return 1;                                                                \
-    }                                                                          \
-  } while (0)
-
-int main() {
-  printf("Running test_process.c\n");
-
+int main(void) {
   char *const cat_argv[] = {"/bin/cat", NULL};
   tube *t = process(cat_argv, NULL);
-  ASSERT_TRUE(t != NULL, "Failed to create process for cat");
+  ASSERT_TRUE(t != NULL, "Create process for cat");
 
   const char *test_input = "This is a test.\n";
   ssize_t written_bytes = write(t_in(t), test_input, strlen(test_input));
   ASSERT_TRUE(written_bytes == (ssize_t)strlen(test_input),
-              "Failed to write all bytes to stdin");
+              "Write all bytes to stdin");
 
   // Close stdin to signal EOF to cat
   t_cin(t);
@@ -41,12 +29,10 @@ int main() {
   }
   received_output[total_read] = '\0';
 
-  ASSERT_TRUE(strcmp(test_input, received_output) == 0,
-              "Received output does not match sent input");
+  ASSERT_STREQ(received_output, test_input,
+               "Received output matches sent input");
 
   t_close(t);
-
-  printf("Test passed: Process communication successful.\n");
 
   return 0;
 }
