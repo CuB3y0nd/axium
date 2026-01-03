@@ -29,6 +29,9 @@ __attribute__((warn_unused_result)) tube *process(char *const argv[],
  */
 void t_close(tube *t) __attribute__((nonnull(1)));
 
+/** @brief Returns the pid of the created process. */
+static inline pid_t t_pid(tube *t) { return t ? t->pid : -1; }
+
 /** @brief Returns the file descriptor for the child's stdin. */
 static inline int t_in(tube *t) { return t ? t->write_fd : -1; }
 
