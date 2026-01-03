@@ -1,8 +1,6 @@
-#include "axium/tubes/process.h"
+#include <axium/tubes/process.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/wait.h>
-#include <unistd.h>
 
 #define ASSERT_TRUE(condition, message)                                        \
   do {                                                                         \
