@@ -126,6 +126,6 @@ __attribute__((nonnull(1))) void t_close(tube *t) {
   t_cin(t);
   t_cout(t);
   t_cerr(t);
-  waitpid(t->pid, NULL, 0);
+  waitpid(t_pid(t), NULL, 0);
   free(t);
 }
