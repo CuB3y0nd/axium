@@ -1,0 +1,10 @@
+.cache/
+compile_commands.json
+
+**/*.o
+/tests/**
+!/tests/**/
+!/tests/**/*.c
+
+exp
+exp.c
