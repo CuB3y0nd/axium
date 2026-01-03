@@ -5,6 +5,7 @@ compile_commands.json
 /tests/**
 !/tests/**/
 !/tests/**/*.c
+!/tests/**/*.h
 
 exp
 exp.c
