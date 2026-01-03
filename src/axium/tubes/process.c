@@ -9,8 +9,6 @@
 __attribute__((warn_unused_result)) __attribute__((nonnull(1))) tube *
 process(char *const argv[], char *const envp[]) {
   int p2c[2] = {-1, -1};
-  int c2p[2] = {-1, -1};
-  int e2p[2] = {-1, -1};
   int sync_pipe[2] = {-1, -1};
   pid_t pid;
   tube *t;
@@ -23,16 +21,6 @@ process(char *const argv[], char *const envp[]) {
 
   if (pipe2(p2c, O_CLOEXEC) == -1) {
     perror("pipe2 (parent_to_child)");
-    goto fail;
-  }
-
-  if (pipe2(c2p, O_CLOEXEC) == -1) {
-    perror("pipe2 (child_to_parent)");
-    goto fail;
-  }
-
-  if (pipe2(e2p, O_CLOEXEC) == -1) {
-    perror("pipe2 (child_stderr_to_parent)");
     goto fail;
   }
 
@@ -49,8 +37,9 @@ process(char *const argv[], char *const envp[]) {
 
   if (pid == 0) {
     close(sync_pipe[0]);
-    if (dup2(p2c[0], STDIN_FILENO) == -1 || dup2(c2p[1], STDOUT_FILENO) == -1 ||
-        dup2(e2p[1], STDERR_FILENO) == -1) {
+    // Only redirect stdin, child will inherit parent's stdout and stderr
+    // defaultly
+    if (dup2(p2c[0], STDIN_FILENO) == -1) {
       int err = errno;
       write(sync_pipe[1], &err, sizeof(err));
       _exit(EXIT_FAILURE);
@@ -76,7 +65,7 @@ process(char *const argv[], char *const envp[]) {
 
   if (n > 0) {
     // Child sent an error
-    if (n == sizeof(err)) { // ensure we get the integral errno code
+    if (n == sizeof(err)) {
       errno = err;
     }
     perror("process: exec failed");
@@ -89,12 +78,10 @@ process(char *const argv[], char *const envp[]) {
   }
 
   close(p2c[0]);
-  close(c2p[1]);
-  close(e2p[1]);
 
   t->write_fd = p2c[1];
-  t->read_fd = c2p[0];
-  t->stderr_fd = e2p[0];
+  t->read_fd = -1;
+  t->stderr_fd = -1;
   t->pid = pid;
 
   return t;
@@ -103,14 +90,6 @@ fail:
   if (p2c[0] != -1) {
     close(p2c[0]);
     close(p2c[1]);
-  }
-  if (c2p[0] != -1) {
-    close(c2p[0]);
-    close(c2p[1]);
-  }
-  if (e2p[0] != -1) {
-    close(e2p[0]);
-    close(e2p[1]);
   }
   if (sync_pipe[0] != -1) {
     close(sync_pipe[0]);
