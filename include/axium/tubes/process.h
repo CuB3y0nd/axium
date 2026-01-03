@@ -1,5 +1,5 @@
-#ifndef PROCESS_H
-#define PROCESS_H
+#ifndef AXIUM_PROCESS_H
+#define AXIUM_PROCESS_H
 
 #include <sys/types.h>
 #include <unistd.h>
@@ -62,4 +62,4 @@ static inline void t_cerr(tube *t) {
   }
 }
 
-#endif // PROCESS_H
+#endif // AXIUM_PROCESS_H
