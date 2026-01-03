@@ -31,7 +31,7 @@ all: $(TARGET)
 
 # Rule to link each individual test binary
 tests/%: tests/%.o $(OBJS)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
+	$(CC) $(LDFLAGS) -o $@ $^
 
 # Run all tests
 test: $(TEST_BINS)
@@ -40,6 +40,10 @@ test: $(TEST_BINS)
 		./$$test_bin || exit 1; \
 	done
 	@echo "All tests passed!"
+
+# Rule for test objects - includes -Itests
+tests/%.o: tests/%.c
+	$(CC) $(CFLAGS) -Itests -c $< -o $@
 
 # Generic compilation rule (transforms .c into .o)
 %.o: %.c
