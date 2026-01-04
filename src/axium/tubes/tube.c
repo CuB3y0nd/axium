@@ -14,8 +14,8 @@
 #define likely(x) __builtin_expect(!!(x), 1)
 #define unlikely(x) __builtin_expect(!!(x), 0)
 
-static inline void _t_log_debug_data(const char *msg, const void *data,
-                                     size_t size) {
+static inline void _log_debug_data(const char *msg, const void *data,
+                                   size_t size) {
   if (unlikely(get_log_level() == DEBUG)) {
     log_debug("%s 0x%zx bytes:", msg, size);
     hexdump_options opts = HEXDUMP_DEFAULT_OPTIONS;
@@ -24,7 +24,7 @@ static inline void _t_log_debug_data(const char *msg, const void *data,
   }
 }
 
-static _HOT ssize_t _t_send_raw(tube *t, const void *data, size_t size) {
+static _HOT ssize_t _send_raw(tube *t, const void *data, size_t size) {
   if (unlikely(t->write_fd == -1))
     return -1;
   ssize_t total_sent = 0;
@@ -43,12 +43,12 @@ static _HOT ssize_t _t_send_raw(tube *t, const void *data, size_t size) {
   return total_sent;
 }
 
-_HOT ssize_t t_send(tube *t, const void *data, size_t size) {
-  _t_log_debug_data("Sent", data, size);
-  return _t_send_raw(t, data, size);
+_HOT ssize_t send(tube *t, const void *data, size_t size) {
+  _log_debug_data("Sent", data, size);
+  return _send_raw(t, data, size);
 }
 
-ssize_t t_sendline(tube *t, const void *data, size_t size) {
+ssize_t sendline(tube *t, const void *data, size_t size) {
   char stack_buf[1024];
   char *buf;
   if (likely(size < sizeof(stack_buf))) {
@@ -60,13 +60,13 @@ ssize_t t_sendline(tube *t, const void *data, size_t size) {
   }
   memcpy(buf, data, size);
   buf[size] = '\n';
-  ssize_t n = t_send(t, buf, size + 1);
+  ssize_t n = send(t, buf, size + 1);
   if (unlikely(buf != stack_buf))
     free(buf);
   return n;
 }
 
-_HOT ssize_t t_recv(tube *t, void *buf, size_t size) {
+_HOT ssize_t recv(tube *t, void *buf, size_t size) {
   if (unlikely(t->read_fd == -1))
     return -1;
   ssize_t n;
@@ -74,12 +74,12 @@ _HOT ssize_t t_recv(tube *t, void *buf, size_t size) {
     n = read(t->read_fd, buf, size);
   } while (n == -1 && errno == EINTR);
   if (likely(n > 0)) {
-    _t_log_debug_data("Received", buf, (size_t)n);
+    _log_debug_data("Received", buf, (size_t)n);
   }
   return n;
 }
 
-void *t_recvuntil(tube *t, const char *delim, size_t *out_size) {
+void *recvuntil(tube *t, const char *delim, size_t *out_size) {
   if (unlikely(t->read_fd == -1 || !delim))
     return NULL;
 
@@ -118,7 +118,7 @@ void *t_recvuntil(tube *t, const char *delim, size_t *out_size) {
   }
 
   if (length > 0) {
-    _t_log_debug_data("Received until delimiter", buf, length);
+    _log_debug_data("Received until delimiter", buf, length);
   }
 
   if (out_size)
@@ -133,11 +133,11 @@ void *t_recvuntil(tube *t, const char *delim, size_t *out_size) {
   return buf;
 }
 
-void *t_recvline(tube *t, size_t *out_size) {
-  return t_recvuntil(t, "\n", out_size);
+void *recvline(tube *t, size_t *out_size) {
+  return recvuntil(t, "\n", out_size);
 }
 
-void **t_recvlines(tube *t, size_t numlines, size_t *out_count) {
+void **recvlines(tube *t, size_t numlines, size_t *out_count) {
   if (unlikely(numlines == 0))
     return NULL;
 
@@ -148,7 +148,7 @@ void **t_recvlines(tube *t, size_t numlines, size_t *out_count) {
   size_t count = 0;
   while (count < numlines) {
     size_t sz;
-    void *line = t_recvline(t, &sz);
+    void *line = recvline(t, &sz);
     if (unlikely(!line))
       break;
     lines[count++] = line;
@@ -165,7 +165,7 @@ void **t_recvlines(tube *t, size_t numlines, size_t *out_count) {
   return lines;
 }
 
-void *t_recvall(tube *t, size_t *out_size) {
+void *recvall(tube *t, size_t *out_size) {
   if (unlikely(t->read_fd == -1))
     return NULL;
   size_t capacity = 4096;
@@ -203,33 +203,33 @@ void *t_recvall(tube *t, size_t *out_size) {
   return buf;
 }
 
-void *t_sendafter(tube *t, const char *delim, const void *data, size_t size,
-                  size_t *out_size) {
-  void *res = t_recvuntil(t, delim, out_size);
-  t_send(t, data, size);
+void *sendafter(tube *t, const char *delim, const void *data, size_t size,
+                size_t *out_size) {
+  void *res = recvuntil(t, delim, out_size);
+  send(t, data, size);
   return res;
 }
 
-void *t_sendlineafter(tube *t, const char *delim, const void *data, size_t size,
-                      size_t *out_size) {
-  void *res = t_recvuntil(t, delim, out_size);
-  t_sendline(t, data, size);
+void *sendlineafter(tube *t, const char *delim, const void *data, size_t size,
+                    size_t *out_size) {
+  void *res = recvuntil(t, delim, out_size);
+  sendline(t, data, size);
   return res;
 }
 
-void *t_sendthen(tube *t, const char *delim, const void *data, size_t size,
-                 size_t *out_size) {
-  t_send(t, data, size);
-  return t_recvuntil(t, delim, out_size);
+void *sendthen(tube *t, const char *delim, const void *data, size_t size,
+               size_t *out_size) {
+  send(t, data, size);
+  return recvuntil(t, delim, out_size);
 }
 
-void *t_sendlinethen(tube *t, const char *delim, const void *data, size_t size,
-                     size_t *out_size) {
-  t_sendline(t, data, size);
-  return t_recvuntil(t, delim, out_size);
+void *sendlinethen(tube *t, const char *delim, const void *data, size_t size,
+                   size_t *out_size) {
+  sendline(t, data, size);
+  return recvuntil(t, delim, out_size);
 }
 
-void t_interactive(tube *t, const char *prompt) {
+void interactive(tube *t, const char *prompt) {
   log_info("Switching to interactive mode");
   struct pollfd fds[3];
   int nfds = 2;
@@ -268,7 +268,7 @@ void t_interactive(tube *t, const char *prompt) {
             printf("\r\x1b[K");
             prompt_on_screen = false;
           }
-          _t_log_debug_data("Received", buf, (size_t)n);
+          _log_debug_data("Received", buf, (size_t)n);
           write(STDOUT_FILENO, buf, n);
           if (buf[n - 1] == '\n')
             need_prompt = true;
@@ -284,7 +284,7 @@ void t_interactive(tube *t, const char *prompt) {
       ssize_t n = read(STDIN_FILENO, buf, sizeof(buf));
       if (likely(n > 0)) {
         prompt_on_screen = false;
-        if (unlikely(t_send(t, buf, (size_t)n) <= 0)) {
+        if (unlikely(send(t, buf, (size_t)n) <= 0)) {
           log_info("Got EOF while sending in interactive");
           goto end;
         }
@@ -302,7 +302,7 @@ end:
 
 void t_free(void *ptr) { free(ptr); }
 
-void t_free_lines(void **lines) {
+void t_freelines(void **lines) {
   if (unlikely(!lines))
     return;
   for (int i = 0; lines[i] != NULL; i++) {
