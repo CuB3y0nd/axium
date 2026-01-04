@@ -2,10 +2,11 @@
 compile_commands.json
 
 **/*.o
-/tests/**
-!/tests/**/
-!/tests/**/*.c
-!/tests/**/*.h
+/exp
+/exp.c
+*.b64
 
-exp
-exp.c
+/src/tests/**
+!/src/tests/**/
+!/src/tests/**/*.c
+!/src/tests/**/*.h
