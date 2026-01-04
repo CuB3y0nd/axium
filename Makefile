@@ -12,25 +12,25 @@ SRC ?= exp.c
 TARGET = $(SRC:.c=)
 
 # Library source files
-SRCS = $(shell find src -name '*.c')
+SRCS = $(shell find src -name '*.c' ! -path 'src/tests/*')
 OBJS = $(SRCS:.c=.o)
 
 # Test files
-TEST_SRCS = $(shell find tests -name '*.c')
+TEST_SRCS = $(shell find src/tests -name '*.c')
 TEST_OBJS = $(TEST_SRCS:.c=.o)
 TEST_BINS = $(TEST_SRCS:.c=)
 
 .PHONY: all clean test
 
 # Default target
-all: $(TARGET)
+all: $(TARGET) $(TEST_BINS)
 
 # Rule to link any 'executable' from its 'executable.c' and library objects
 %: %.o $(OBJS)
 	$(CC) $(LDFLAGS) -o $@ $^
 
 # Rule to link each individual test binary
-tests/%: tests/%.o $(OBJS)
+src/tests/%: src/tests/%.o $(OBJS)
 	$(CC) $(LDFLAGS) -o $@ $^
 
 # Run all tests
@@ -41,9 +41,9 @@ test: $(TEST_BINS)
 	done
 	@echo "All tests passed!"
 
-# Rule for test objects - includes -Itests
-tests/%.o: tests/%.c
-	$(CC) $(CFLAGS) -Itests -c $< -o $@
+# Rule for test objects - includes -Isrc/tests
+src/tests/%.o: src/tests/%.c
+	$(CC) $(CFLAGS) -Isrc/tests -c $< -o $@
 
 # Generic compilation rule (transforms .c into .o)
 %.o: %.c
@@ -55,4 +55,4 @@ clean:
 	@# Clean up all object files and executables that might have been created
 	find . -maxdepth 1 -type f -name "*.o" -delete
 	find . -maxdepth 1 -type f -executable -not -name "*.sh" -not -name "Makefile" -delete
-	find tests -type f -name "*.o" -delete
+	find src/tests -type f -name "*.o" -delete
