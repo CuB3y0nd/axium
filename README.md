@@ -37,6 +37,20 @@ Or specify the source explicitly:
 make SRC=my_exp.c
 ```
 
+### Bundling for Submission
+
+Axium can generate a single "amalgamated" C file that includes both your script and the entire library source. This is ideal for CTF write-ups or environments where you cannot easily upload multiple files.
+
+```bash
+# Generates exp_bundled.c (from exp.c)
+make bundle
+
+# Or for a specific script (generates my_exp_bundled.c)
+make SRC=my_exp.c bundle
+```
+
+*Note: Building any script (e.g., `make my_exp`) automatically generates its bundled version.*
+
 ### Run Test Suites
 
 Every file in `tests/*.c` is treated as an independent binary.
@@ -50,4 +64,3 @@ make test
 ```bash
 make clean
 ```
-
