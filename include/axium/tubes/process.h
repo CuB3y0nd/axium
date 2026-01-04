@@ -1,15 +1,8 @@
 #ifndef AXIUM_PROCESS_H
 #define AXIUM_PROCESS_H
 
-#include <sys/types.h>
+#include <axium/tubes/tube.h>
 #include <unistd.h>
-
-typedef struct {
-  int read_fd;   // Read from process stdout
-  int write_fd;  // Write to process stdin
-  int stderr_fd; // Read from process stderr
-  pid_t pid;
-} tube;
 
 typedef enum {
   TUBE_STDIN = 1 << 0,
