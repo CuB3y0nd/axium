@@ -11,16 +11,25 @@ typedef struct {
   pid_t pid;
 } tube;
 
+typedef enum {
+  TUBE_STDIN = 1 << 0,
+  TUBE_STDOUT = 1 << 1,
+  TUBE_STDERR = 1 << 2,
+  TUBE_ALL = TUBE_STDIN | TUBE_STDOUT | TUBE_STDERR
+} tube_flags_t;
+
+/**
+ * @brief Spawns a new process with custom redirection.
+ */
+__attribute__((warn_unused_result)) tube *
+process_ext(char *const argv[], char *const envp[], tube_flags_t flags);
+
 /**
  * @brief Spawns a new process and returns a tube for communication.
- *
- * @param argv Null-terminated array of strings for the command and arguments.
- * @param envp Optional null-terminated array of environment variables.
- * @return A pointer to a tube struct on success, NULL on failure.
+ * Defaultly redirects STDIN, STDOUT, and STDERR.
  */
 __attribute__((warn_unused_result)) tube *process(char *const argv[],
-                                                  char *const envp[])
-    __attribute__((nonnull(1)));
+                                                  char *const envp[]);
 
 /**
  * @brief Closes all pipes, waits for the child process to exit, and frees the
