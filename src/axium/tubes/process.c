@@ -17,6 +17,7 @@ process_ext(char *const argv[], char *const envp[], tube_flags_t flags) {
   }
 
   t->write_fd = t->read_fd = t->stderr_fd = -1;
+  t->timeout = TIMEOUT_FOREVER;
 
   // Create necessary pipes based on flags
   tube_flags_t flag_list[] = {TUBE_STDIN, TUBE_STDOUT, TUBE_STDERR};

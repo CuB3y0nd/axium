@@ -1,4 +1,5 @@
 #include <axium/log.h>
+#include <axium/timeout.h>
 #include <axium/tubes/process.h>
 #include <axium/tubes/tube.h>
 #include <axium/utils/fiddling.h>
@@ -8,20 +9,52 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/wait.h>
-#include <unistd.h>
 
 #define _HOT __attribute__((hot))
+#define _INLINE static inline __attribute__((always_inline))
+#define _FLATTEN __attribute__((flatten))
 #define likely(x) __builtin_expect(!!(x), 1)
 #define unlikely(x) __builtin_expect(!!(x), 0)
 
-static inline void _log_debug_data(const char *msg, const void *data,
-                                   size_t size) {
+_INLINE void _log_debug_data(const char *msg, const void *data, size_t size) {
   if (unlikely(get_log_level() == DEBUG)) {
     log_debug("%s 0x%zx bytes:", msg, size);
     hexdump_options opts = HEXDUMP_DEFAULT_OPTIONS;
     opts.prefix = "    ";
     hexdump(data, size, &opts);
   }
+}
+
+/**
+ * @brief Resolves the effective timeout value, handling the TIMEOUT_DEFAULT
+ * sentinel.
+ */
+_INLINE double _get_timeout(tube *t, double timeout) {
+  if (timeout == TIMEOUT_DEFAULT) {
+    return t->timeout;
+  }
+  return timeout;
+}
+
+/**
+ * @brief Waits for data to be available on a file descriptor using poll.
+ * @return 1 if data is available, 0 on timeout, -1 on error.
+ */
+_HOT _INLINE int _wait_read(int fd, double timeout) {
+  if (timeout == 0.0)
+    return 0; // Immediate check
+  struct pollfd pfd = {.fd = fd, .events = POLLIN};
+  int timeout_ms;
+  if (timeout == TIMEOUT_FOREVER || timeout < 0) {
+    timeout_ms = -1;
+  } else {
+    timeout_ms = (int)(timeout * 1000);
+  }
+  int ret;
+  do {
+    ret = poll(&pfd, 1, timeout_ms);
+  } while (ret == -1 && errno == EINTR);
+  return ret;
 }
 
 static _HOT ssize_t _send_raw(tube *t, const void *data, size_t size) {
@@ -66,9 +99,13 @@ ssize_t sendline(tube *t, const void *data, size_t size) {
   return n;
 }
 
-_HOT ssize_t recv(tube *t, void *buf, size_t size) {
+_HOT ssize_t recv(tube *t, void *buf, size_t size, double timeout) {
   if (unlikely(t->read_fd == -1))
     return -1;
+  timeout = _get_timeout(t, timeout);
+  if (_wait_read(t->read_fd, timeout) <= 0) {
+    return 0; // Timeout or error
+  }
   ssize_t n;
   do {
     n = read(t->read_fd, buf, size);
@@ -79,11 +116,19 @@ _HOT ssize_t recv(tube *t, void *buf, size_t size) {
   return n;
 }
 
-void *recvuntil(tube *t, const char *delim, size_t *out_size) {
-  if (unlikely(t->read_fd == -1 || !delim))
+_HOT void *recvuntil(tube *t, const char *delim, double timeout,
+                     size_t *out_size) {
+  if (unlikely(t->read_fd == -1))
     return NULL;
 
+  timeout = _get_timeout(t, timeout);
+  double end_time = 0;
+  if (timeout != TIMEOUT_FOREVER && timeout >= 0) {
+    end_time = timeout_now() + timeout;
+  }
+
   size_t delim_size = strlen(delim);
+  char last_delim_char = delim[delim_size - 1];
   size_t capacity = 1024;
   size_t length = 0;
   unsigned char *buf = malloc(capacity);
@@ -91,6 +136,24 @@ void *recvuntil(tube *t, const char *delim, size_t *out_size) {
     return NULL;
 
   while (1) {
+    double remaining = TIMEOUT_FOREVER;
+    if (end_time != 0) {
+      remaining = end_time - timeout_now();
+      if (remaining <= 0)
+        break;
+    }
+
+    if (_wait_read(t->read_fd, remaining) <= 0) {
+      // If we didn't read anything yet and it timed out, return NULL.
+      // Otherwise, we return the partial data read so far (standard pwntools
+      // behavior).
+      if (length == 0) {
+        free(buf);
+        return NULL;
+      }
+      break;
+    }
+
     unsigned char c;
     ssize_t n = read(t->read_fd, &c, 1);
     if (unlikely(n <= 0)) {
@@ -110,7 +173,8 @@ void *recvuntil(tube *t, const char *delim, size_t *out_size) {
     }
     buf[length++] = c;
 
-    if (length >= delim_size) {
+    // Fast path: check last character first
+    if (length >= delim_size && c == last_delim_char) {
       if (memcmp(buf + length - delim_size, delim, delim_size) == 0) {
         break;
       }
@@ -133,13 +197,20 @@ void *recvuntil(tube *t, const char *delim, size_t *out_size) {
   return buf;
 }
 
-void *recvline(tube *t, size_t *out_size) {
-  return recvuntil(t, "\n", out_size);
+void *recvline(tube *t, double timeout, size_t *out_size) {
+  return recvuntil(t, "\n", timeout, out_size);
 }
 
-void **recvlines(tube *t, size_t numlines, size_t *out_count) {
+_HOT void **recvlines(tube *t, size_t numlines, double timeout,
+                      size_t *out_count) {
   if (unlikely(numlines == 0))
     return NULL;
+
+  timeout = _get_timeout(t, timeout);
+  double end_time = 0;
+  if (timeout != TIMEOUT_FOREVER && timeout >= 0) {
+    end_time = timeout_now() + timeout;
+  }
 
   void **lines = malloc(sizeof(void *) * (numlines + 1));
   if (unlikely(!lines))
@@ -147,8 +218,15 @@ void **recvlines(tube *t, size_t numlines, size_t *out_count) {
 
   size_t count = 0;
   while (count < numlines) {
+    double remaining = TIMEOUT_FOREVER;
+    if (end_time != 0) {
+      remaining = end_time - timeout_now();
+      if (remaining <= 0)
+        break;
+    }
+
     size_t sz;
-    void *line = recvline(t, &sz);
+    void *line = recvline(t, remaining, &sz);
     if (unlikely(!line))
       break;
     lines[count++] = line;
@@ -165,15 +243,32 @@ void **recvlines(tube *t, size_t numlines, size_t *out_count) {
   return lines;
 }
 
-void *recvall(tube *t, size_t *out_size) {
+_HOT void *recvall(tube *t, double timeout, size_t *out_size) {
   if (unlikely(t->read_fd == -1))
     return NULL;
+  timeout = _get_timeout(t, timeout);
+  double end_time = 0;
+  if (timeout != TIMEOUT_FOREVER && timeout >= 0) {
+    end_time = timeout_now() + timeout;
+  }
+
   size_t capacity = 4096;
   size_t total = 0;
   unsigned char *buf = malloc(capacity);
   if (unlikely(!buf))
     return NULL;
+
   while (1) {
+    double remaining = TIMEOUT_FOREVER;
+    if (end_time != 0) {
+      remaining = end_time - timeout_now();
+      if (remaining <= 0)
+        break;
+    }
+
+    if (_wait_read(t->read_fd, remaining) <= 0)
+      break;
+
     if (unlikely(total + 1024 > capacity)) {
       capacity *= 2;
       unsigned char *new_buf = realloc(buf, capacity);
@@ -203,30 +298,30 @@ void *recvall(tube *t, size_t *out_size) {
   return buf;
 }
 
-void *sendafter(tube *t, const char *delim, const void *data, size_t size,
-                size_t *out_size) {
-  void *res = recvuntil(t, delim, out_size);
+_FLATTEN void *sendafter(tube *t, const char *delim, const void *data,
+                         size_t size, double timeout, size_t *out_size) {
+  void *res = recvuntil(t, delim, timeout, out_size);
   send(t, data, size);
   return res;
 }
 
-void *sendlineafter(tube *t, const char *delim, const void *data, size_t size,
-                    size_t *out_size) {
-  void *res = recvuntil(t, delim, out_size);
+_FLATTEN void *sendlineafter(tube *t, const char *delim, const void *data,
+                             size_t size, double timeout, size_t *out_size) {
+  void *res = recvuntil(t, delim, timeout, out_size);
   sendline(t, data, size);
   return res;
 }
 
-void *sendthen(tube *t, const char *delim, const void *data, size_t size,
-               size_t *out_size) {
+_FLATTEN void *sendthen(tube *t, const char *delim, const void *data,
+                        size_t size, double timeout, size_t *out_size) {
   send(t, data, size);
-  return recvuntil(t, delim, out_size);
+  return recvuntil(t, delim, timeout, out_size);
 }
 
-void *sendlinethen(tube *t, const char *delim, const void *data, size_t size,
-                   size_t *out_size) {
+_FLATTEN void *sendlinethen(tube *t, const char *delim, const void *data,
+                            size_t size, double timeout, size_t *out_size) {
   sendline(t, data, size);
-  return recvuntil(t, delim, out_size);
+  return recvuntil(t, delim, timeout, out_size);
 }
 
 void interactive(tube *t, const char *prompt) {
@@ -243,7 +338,7 @@ void interactive(tube *t, const char *prompt) {
     nfds = 3;
   }
   unsigned char buf[4096];
-  const char *actual_prompt = prompt ? prompt : ANSI_BOLD_RED "$ " ANSI_RESET;
+  const char *actual_prompt = prompt ? prompt : ANSI_BOLD_RED "λ " ANSI_RESET;
   bool need_prompt = true;
   bool prompt_on_screen = false;
 
