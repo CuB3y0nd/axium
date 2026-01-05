@@ -73,7 +73,7 @@ void test_recvuntil_countdown(void) {
   void *res = recvuntil(t, "PART2", 0.2, &sz);
 
   ASSERT_TRUE(res != NULL, "Should return what it managed to read");
-  ASSERT_STREQ(res, "PART1", "Should have captured PART1 before timeout");
+  ASSERT_STREQ((char *)res, "PART1", "Should have captured PART1 before timeout");
   ASSERT_TRUE(sz == 5, "Size should match PART1");
   t_free(res);
 
@@ -90,7 +90,7 @@ void test_recvall_timeout(void) {
   void *res = recvall(t, 0.5, &sz);
 
   ASSERT_TRUE(res != NULL, "recvall should return partial data on timeout");
-  ASSERT_STREQ(res, "START", "captured data matches");
+  ASSERT_STREQ((char *)res, "START", "captured data matches");
   // recvall automatically closes the tube on completion or timeout
 }
 
