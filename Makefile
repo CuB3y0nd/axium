@@ -1,5 +1,5 @@
-# Disable built-in rules to prevent interference
-MAKEFLAGS += --no-builtin-rules
+# Disable built-in rules and enable multi-threaded compilation
+MAKEFLAGS += --no-builtin-rules -j$(shell nproc)
 
 # Compiler and compilation flags
 CC = gcc
