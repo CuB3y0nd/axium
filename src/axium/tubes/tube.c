@@ -312,6 +312,8 @@ void t_freelines(void **lines) {
 }
 
 void t_close(tube *t) {
+  if (!t)
+    return;
   t_cin(t);
   t_cout(t);
   t_cerr(t);
