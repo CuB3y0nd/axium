@@ -79,14 +79,19 @@ void test_payload_rel_patching_all(void) {
   payload_patch_rel8(&p, 0xAA, 11); // target 11, cur 0+1=1. disp 10
   ASSERT_EQ(*(uint8_t *)p.data, 10, "rel8 correct");
 
+  // rel16
+  payload_at_u16(&p, 10, 0xBBBB);
+  payload_patch_rel16(&p, 0xBBBB, 32); // target 32, cur 10+2=12. disp 20
+  ASSERT_EQ(*(uint16_t *)(p.data + 10), 20, "rel16 correct");
+
   // rel32
-  payload_at_u32(&p, 20, 0xBBBBBBBB);
-  payload_patch_rel32(&p, 0xBBBBBBBB, 54); // target 54, cur 20+4=24. disp 30
+  payload_at_u32(&p, 20, 0xCCCCCCCC);
+  payload_patch_rel32(&p, 0xCCCCCCCC, 54); // target 54, cur 20+4=24. disp 30
   ASSERT_EQ(*(uint32_t *)(p.data + 20), 30, "rel32 correct");
 
   // rel64
-  payload_at_u64(&p, 40, 0xCCCCCCCC);
-  payload_patch_rel64(&p, 0xCCCCCCCC, 148); // target 148, cur 40+8=48. disp 100
+  payload_at_u64(&p, 40, 0xDDDDDDDD);
+  payload_patch_rel64(&p, 0xDDDDDDDD, 148); // target 148, cur 40+8=48. disp 100
   ASSERT_EQ(*(uint64_t *)(p.data + 40), 100, "rel64 correct");
 
   payload_fini(&p);
