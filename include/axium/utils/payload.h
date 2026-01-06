@@ -234,7 +234,7 @@ payload_patch_u64(payload_t *p, uint64_t marker, uint64_t replacement) {
  * @param type The type of each element (e.g., uint64_t).
  * @param ... Elements or designated initializers.
  */
-#define PAYLOAD_PACK(p, type, ...)                                             \
+#define FLAT(p, type, ...)                                                     \
   payload_push(p, (const type[]){__VA_ARGS__},                                 \
                sizeof((const type[]){__VA_ARGS__}))
 

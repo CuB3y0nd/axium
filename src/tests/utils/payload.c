@@ -21,7 +21,7 @@ void test_payload_pack_designated(void) {
   payload_t p;
   payload_init(&p);
   // Designated initializers for sparse chain construction
-  PAYLOAD_PACK(&p, uint64_t, [0] = 0x1111, [3] = 0x3333);
+  FLAT(&p, uint64_t, [0] = 0x1111, [3] = 0x3333);
   ASSERT_EQ(p.size, 4 * 8, "Sparse PACK size correct");
   uint64_t *d = (uint64_t *)p.data;
   ASSERT_EQ(d[0], 0x1111, "Item 0 correct");
