@@ -8,11 +8,11 @@
  * @brief Representation of a communication channel (tube).
  */
 typedef struct {
-  int read_fd;    /* Read from process stdout */
-  int write_fd;   /* Write to process stdin */
-  int stderr_fd;  /* Read from process stderr */
-  pid_t pid;      /* PID of the process associated with the tube */
-  double timeout; /* Default timeout */
+  int read_fd;    /**< Read from process stdout. */
+  int write_fd;   /**< Write to process stdin. */
+  int stderr_fd;  /**< Read from process stderr. */
+  pid_t pid;      /**< PID of the process associated with the tube. */
+  double timeout; /**< Default timeout. */
 } tube;
 
 #define _TUBE_ATTR_NONNULL __attribute__((nonnull(1)))
