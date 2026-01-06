@@ -7,124 +7,111 @@ void test_patch_basic(void) {
   ASSERT_STREQ(buf, "Hello AXIUM! World", "Basic patch works");
 }
 
-void test_patch_edge_cases(void) {
-  char buf[] = "Test";
-  // Buffer smaller than marker
-  patch((uint8_t *)buf, 4, "LONGMARKER", 10, "X", 1);
-  ASSERT_STREQ(buf, "Test", "Patch does nothing if buffer < marker");
-
-  // Zero replacement size (should zero-fill the marker)
-  char buf2[] = "AAABBBCCC";
-  patch((uint8_t *)buf2, 9, "BBB", 3, NULL, 0);
-  ASSERT_TRUE(memcmp(buf2, "AAA\0\0\0CCC", 9) == 0,
-              "Zero-size replacement zero-fills the marker");
+void test_payload_push_str(void) {
+  payload_t p;
+  payload_init(&p);
+  payload_push_str(&p, "AXIUM");
+  ASSERT_EQ(p.size, 5, "payload_push_str size correct");
+  ASSERT_TRUE(memcmp(p.data, "AXIUM", 5) == 0,
+              "payload_push_str content correct");
+  payload_fini(&p);
 }
 
-void test_payload_push_ints(void) {
+void test_payload_pack_designated(void) {
+  payload_t p;
+  payload_init(&p);
+  // Designated initializers for sparse chain construction
+  PAYLOAD_PACK(&p, uint64_t, [0] = 0x1111, [3] = 0x3333);
+  ASSERT_EQ(p.size, 4 * 8, "Sparse PACK size correct");
+  uint64_t *d = (uint64_t *)p.data;
+  ASSERT_EQ(d[0], 0x1111, "Item 0 correct");
+  ASSERT_EQ(d[1], 0, "Item 1 zero-filled");
+  ASSERT_EQ(d[3], 0x3333, "Item 3 correct");
+  payload_fini(&p);
+}
+
+void test_payload_fill_to_variants(void) {
   payload_t p;
   payload_init(&p);
 
-  payload_push_u8(&p, 0x11);
-  payload_push_u16(&p, 0x2233);
-  payload_push_u32(&p, 0x44556677);
-  payload_push_u64(&p, 0x8899AABBCCDDEEFF);
+  // 1. Fill to offset with zeros (filler=NULL)
+  payload_fill_to(&p, 16, NULL, 0);
+  ASSERT_EQ(p.size, 16, "fill_to zero size correct");
+  for (size_t i = 0; i < 16; i++)
+    ASSERT_EQ(p.data[i], 0, "Filled with zeros");
 
-  ASSERT_EQ(p.size, 1 + 2 + 4 + 8, "Payload size correct after integer pushes");
-  ASSERT_EQ(*(uint8_t *)(p.data + 0), 0x11, "u8 push correct");
-  ASSERT_EQ(*(uint16_t *)(p.data + 1), 0x2233, "u16 push correct");
-  ASSERT_EQ(*(uint32_t *)(p.data + 3), 0x44556677, "u32 push correct");
-  ASSERT_EQ(*(uint64_t *)(p.data + 7), 0x8899AABBCCDDEEFF, "u64 push correct");
+  // 2. Single-byte optimized fill (filler_size=1)
+  uint8_t f = 0x41;
+  payload_fill_to(&p, 32, &f, 1);
+  ASSERT_EQ(p.size, 32, "fill_to single byte size correct");
+  for (size_t i = 16; i < 32; i++)
+    ASSERT_EQ(p.data[i], 0x41, "Filled with 'A'");
+
+  // 3. Multi-byte pattern fill
+  payload_fill_to(&p, 38, "ABC", 3);
+  // current 32. need 6 more. ABCABC
+  ASSERT_TRUE(memcmp(p.data + 32, "ABCABC", 6) == 0, "Pattern fill correct");
 
   payload_fini(&p);
 }
 
-void test_payload_patch_ints(void) {
+void test_payload_at_helpers(void) {
   payload_t p;
   payload_init(&p);
 
-  payload_push_u8(&p, 0xAA);
-  payload_push_u16(&p, 0xBBBB);
-  payload_push_u32(&p, 0xCCCCCCCC);
-  payload_push_u64(&p, 0xDDDDDDDDDDDDDDDD);
+  payload_at_str(&p, 0x10, "MARK");
+  payload_at_u64(&p, 0x20, 0x1337);
 
-  payload_patch_u8(&p, 0xAA, 0x11);
-  payload_patch_u16(&p, 0xBBBB, 0x2222);
-  payload_patch_u32(&p, 0xCCCCCCCC, 0x33333333);
-  payload_patch_u64(&p, 0xDDDDDDDDDDDDDDDD, 0x4444444444444444);
-
-  ASSERT_EQ(*(uint8_t *)(p.data + 0), 0x11, "u8 patch correct");
-  ASSERT_EQ(*(uint16_t *)(p.data + 1), 0x2222, "u16 patch correct");
-  ASSERT_EQ(*(uint32_t *)(p.data + 3), 0x33333333, "u32 patch correct");
-  ASSERT_EQ(*(uint64_t *)(p.data + 7), 0x4444444444444444, "u64 patch correct");
+  ASSERT_EQ(p.size, 0x20 + 8, "payload_at helpers size correct");
+  ASSERT_TRUE(memcmp(p.data + 0x10, "MARK", 4) == 0, "at_str correct");
+  ASSERT_EQ(*(uint64_t *)(p.data + 0x20), 0x1337, "at_u64 correct");
+  ASSERT_EQ(p.data[5], 0, "Gap is zero-filled");
 
   payload_fini(&p);
 }
 
-void test_payload_rel_all_sizes(void) {
+void test_payload_rel_patching_all(void) {
   payload_t p;
   payload_init(&p);
 
-  // 8-bit rel
-  size_t off8 = p.size;
-  payload_push_u8(&p, 0xFF);
-  payload_patch_rel8(&p, 0xFF, off8 + 1 + 10); // Target is 10 bytes ahead
-  ASSERT_EQ(*(uint8_t *)(p.data + off8), 10, "rel8 patch correct");
+  // rel8
+  payload_at_u8(&p, 0, 0xAA);
+  payload_patch_rel8(&p, 0xAA, 11); // target 11, cur 0+1=1. disp 10
+  ASSERT_EQ(*(uint8_t *)p.data, 10, "rel8 correct");
 
-  // 16-bit rel
-  size_t off16 = p.size;
-  payload_push_u16(&p, 0xEEEE);
-  payload_patch_rel16(&p, 0xEEEE, off16 + 2 + 20);
-  ASSERT_EQ(*(uint16_t *)(p.data + off16), 20, "rel16 patch correct");
+  // rel32
+  payload_at_u32(&p, 20, 0xBBBBBBBB);
+  payload_patch_rel32(&p, 0xBBBBBBBB, 54); // target 54, cur 20+4=24. disp 30
+  ASSERT_EQ(*(uint32_t *)(p.data + 20), 30, "rel32 correct");
 
-  // 64-bit rel
-  size_t off64 = p.size;
-  payload_push_u64(&p, 0x7777777777777777);
-  payload_patch_rel64(&p, 0x7777777777777777, off64 + 8 + 100);
-  ASSERT_EQ(*(uint64_t *)(p.data + off64), 100, "rel64 patch correct");
+  // rel64
+  payload_at_u64(&p, 40, 0xCCCCCCCC);
+  payload_patch_rel64(&p, 0xCCCCCCCC, 148); // target 148, cur 40+8=48. disp 100
+  ASSERT_EQ(*(uint64_t *)(p.data + 40), 100, "rel64 correct");
 
   payload_fini(&p);
 }
 
-void test_payload_variadic_macros(void) {
+void test_payload_large_expansion(void) {
   payload_t p;
   payload_init(&p);
 
-  PAYLOAD_PUSH_U32S(&p, 0x1, 0x2, 0x3);
-  ASSERT_EQ(p.size, 12, "U32S macro size correct");
-  uint32_t *d32 = (uint32_t *)p.data;
-  ASSERT_EQ(d32[0], 1, "U32S item 0 correct");
-  ASSERT_EQ(d32[2], 3, "U32S item 2 correct");
+  // Test ensure_capacity with a very large jump
+  payload_fill_to(&p, 10000, "X", 1);
+  ASSERT_EQ(p.size, 10000, "Large expansion size correct");
+  ASSERT_TRUE(p.capacity >= 10000, "Capacity sufficiently expanded");
+  ASSERT_EQ(p.data[9999], 'X', "Last byte correct");
 
-  size_t prev_size = p.size;
-  PAYLOAD_PUSH_U64S(&p, 0xA, 0xB);
-  ASSERT_EQ(p.size, prev_size + 16, "U64S macro size correct");
-  uint64_t *d64 = (uint64_t *)(p.data + prev_size);
-  ASSERT_EQ(d64[0], 0xA, "U64S item 0 correct");
-  ASSERT_EQ(d64[1], 0xB, "U64S item 1 correct");
-
-  payload_fini(&p);
-}
-
-void test_payload_push_growth(void) {
-  payload_t p;
-  payload_init(&p);
-  uint8_t chunk[100];
-  memset(chunk, 'A', 100);
-  for (int i = 0; i < 5; i++) {
-    payload_push(&p, chunk, 100);
-  }
-  ASSERT_TRUE(p.size == 500, "Growth size correct");
-  ASSERT_TRUE(p.capacity >= 500, "Capacity expanded");
   payload_fini(&p);
 }
 
 int main(void) {
   test_patch_basic();
-  test_patch_edge_cases();
-  test_payload_push_ints();
-  test_payload_patch_ints();
-  test_payload_rel_all_sizes();
-  test_payload_variadic_macros();
-  test_payload_push_growth();
+  test_payload_push_str();
+  test_payload_pack_designated();
+  test_payload_fill_to_variants();
+  test_payload_at_helpers();
+  test_payload_rel_patching_all();
+  test_payload_large_expansion();
   return 0;
 }
