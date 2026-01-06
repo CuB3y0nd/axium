@@ -1,6 +1,6 @@
 #include <axium/utils/payload.h>
+#include <stdbool.h>
 #include <stdlib.h>
-#include <string.h>
 
 void payload_init(payload_t *p) {
   p->data = NULL;
@@ -15,29 +15,62 @@ void payload_fini(payload_t *p) {
   p->capacity = 0;
 }
 
+/** @brief Internal helper to ensure buffer capacity. */
+static inline bool ensure_capacity(payload_t *p, size_t needed) {
+  if (needed <= p->capacity)
+    return true;
+
+  size_t new_cap = p->capacity ? p->capacity * 2 : 256;
+  while (new_cap < needed) {
+    new_cap *= 2;
+  }
+  uint8_t *new_data = realloc(p->data, new_cap);
+  if (!new_data)
+    return false;
+
+  p->data = new_data;
+  p->capacity = new_cap;
+  return true;
+}
+
 void payload_push(payload_t *p, const void *data, size_t size) {
-  if (size == 0)
+  if (size == 0 || !ensure_capacity(p, p->size + size))
     return;
 
-  if (p->size + size > p->capacity) {
-    size_t new_cap = p->capacity ? p->capacity * 2 : 256;
-    while (new_cap < p->size + size) {
-      new_cap *= 2;
-    }
-    uint8_t *new_data = realloc(p->data, new_cap);
-    if (!new_data)
-      return;
-    p->data = new_data;
-    p->capacity = new_cap;
-  }
   memcpy(p->data + p->size, data, size);
   p->size += size;
 }
 
-/**
- * Internal helper for relative patching.
- * Recalculates displacement for each occurrence of the marker.
- */
+void payload_push_str(payload_t *p, const char *s) {
+  payload_push(p, s, strlen(s));
+}
+
+void payload_fill_to(payload_t *p, size_t offset, const void *filler,
+                     size_t filler_size) {
+  if (p->size >= offset || !ensure_capacity(p, offset))
+    return;
+
+  size_t diff = offset - p->size;
+  uint8_t *dest = p->data + p->size;
+
+  if (!filler || filler_size == 0) {
+    memset(dest, 0, diff);
+  } else if (filler_size == 1) {
+    memset(dest, *(const uint8_t *)filler, diff);
+  } else {
+    /* Pattern fill */
+    size_t copied = 0;
+    while (copied < diff) {
+      size_t chunk =
+          (diff - copied < filler_size) ? (diff - copied) : filler_size;
+      memcpy(dest + copied, filler, chunk);
+      copied += chunk;
+    }
+  }
+  p->size = offset;
+}
+
+/** @brief Internal helper for relative patching. */
 static void __attribute__((hot, nonnull(1, 2)))
 patch_rel_generic(payload_t *p, const void *marker, size_t marker_size,
                   size_t target_offset) {
@@ -55,15 +88,6 @@ patch_rel_generic(payload_t *p, const void *marker, size_t marker_size,
 
     const size_t marker_off = (size_t)(curr - p->data);
 
-    /*
-     * Displacement = Target - (MarkerStart + MarkerSize)
-     *
-     * In x86, relative offsets are signed. However, performing unsigned
-     * subtraction here is correct due to two's complement wrap-around.
-     * E.g., if target < (marker_off + size), the result will be a large
-     * unsigned value which, when interpreted as signed, is the correct
-     * negative displacement.
-     */
     switch (marker_size) {
     case 1: {
       uint8_t disp = (uint8_t)(target_offset - (marker_off + 1));
@@ -124,7 +148,8 @@ void __attribute__((hot)) patch(uint8_t *restrict buf, size_t buf_size,
     curr = memmem(curr, (size_t)(end - curr), marker, marker_size);
     if (!curr)
       break;
-    memcpy(curr, replacement, copy_len);
+    if (copy_len > 0)
+      memcpy(curr, replacement, copy_len);
     if (zero_len > 0)
       memset(curr + copy_len, 0, zero_len);
     curr += marker_size;
