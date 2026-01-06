@@ -30,6 +30,8 @@
   __asm__ volatile(#name "_end:\n"                                             \
                          ".att_syntax\n")
 
+#include <axium/utils/payload.h>
+
 /**
  * @brief Append shellcode defined via DEFINE_SHELLCODE to a payload.
  * @param p Pointer to the payload.
