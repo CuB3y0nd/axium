@@ -1,6 +1,11 @@
 #ifndef AXIUM_SHELLCRAFT_COMMON_H
 #define AXIUM_SHELLCRAFT_COMMON_H
 
+/** @brief Stringify a macro argument. */
+#define STR(x) #x
+/** @brief Expand and stringify a macro argument. */
+#define XSTR(x) STR(x)
+
 /** @brief Attribute for naked functions (no prologue/epilogue) */
 #define NAKED __attribute__((naked))
 
