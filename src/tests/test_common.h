@@ -16,6 +16,20 @@
     }                                                                          \
   } while (0)
 
+#define ASSERT_EQ(actual, expected, message)                                   \
+  do {                                                                         \
+    if ((actual) != (expected)) {                                              \
+      fprintf(stderr,                                                          \
+              "Assertion failed (EQ):\n  Actual:   %zu (0x%zx)\n  Expected: "  \
+              "%zu (0x%zx)\n  at %s:%d - %s\n",                                \
+              (size_t)(actual), (size_t)(actual), (size_t)(expected),          \
+              (size_t)(expected), __FILE__, __LINE__, message);                \
+      exit(EXIT_FAILURE);                                                      \
+    } else {                                                                   \
+      printf("%s ... ok\n", message);                                          \
+    }                                                                          \
+  } while (0)
+
 #define ASSERT_STREQ(actual, expected, message)                                \
   do {                                                                         \
     if (strcmp(actual, expected) != 0) {                                       \
