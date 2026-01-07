@@ -1,5 +1,7 @@
 #include <axium/log.h>
+#include <axium/timeout.h>
 #include <test_common.h>
+#include <unistd.h>
 
 void test_log_levels(void) {
   printf("--- Testing log levels and get/set ---\n");
@@ -26,20 +28,23 @@ void test_log_filtering(void) {
   set_log_level(WARNING);
   log_info("This info message should NOT be visible");
   log_warning("This warning message should be visible");
-  log_error("This error message should be visible");
+
+  ASSERT_EXIT_FAIL(
+      { log_error("This error message should be visible and exit"); },
+      "log_error should exit with FAILURE");
 }
 
 void test_log_styles(void) {
-  printf("--- All log styles ---\n");
+  printf("--- All log styles (excluding fatal) ---\n");
   set_log_level(DEBUG);
   log_success("success (+)");
   log_failure("failure (-)");
   log_info("info (*)");
   log_warning("warning (!)");
-  log_error("error (ERROR)");
   log_critical("critical (CRITICAL)");
   log_debug("debug (DEBUG)");
   log_status("status (x)");
+  printf("\n"); // Status doesn't end with newline
 }
 
 void test_log_once(void) {
@@ -57,10 +62,38 @@ void test_log_once(void) {
 
 void test_log_exception(void) {
   printf("--- Testing log_exception ---\n");
-  FILE *f = fopen("/tmp/non-existent-file-axium-test", "r");
-  if (!f) {
-    log_exception("Expected failure to open file");
+  ASSERT_EXIT_FAIL(
+      {
+        FILE *f = fopen("/tmp/non-existent-file-axium-test", "r");
+        if (!f) {
+          log_exception("Expected failure to open file");
+        }
+      },
+      "log_exception should exit with FAILURE");
+}
+
+void test_log_status(void) {
+  printf("--- Testing log_status (visual check for overwriting) ---\n");
+  set_log_level(INFO);
+
+  for (int i = 0; i <= 5; i++) {
+    if (i == 5)
+      // Ensure the last update exceeds the throttle threshold (0.1s)
+      usleep(110000);
+    log_status("Counting: %d/5", i);
+    if (i < 5)
+      usleep(50000);
   }
+  printf("\n(Previous updates should have been throttled/overwritten)\n");
+
+  for (int i = 0; i <= 3; i++) {
+    log_status("Interrupted count: %d", i);
+    usleep(150000); // 0.15s, Slower than throttle rate
+    if (i == 1) {
+      log_info("Interruption at i=1");
+    }
+  }
+  log_success("Status finished with success");
 }
 
 int main(void) {
@@ -69,8 +102,6 @@ int main(void) {
   test_log_styles();
   test_log_once();
   test_log_exception();
-
-  printf(
-      "All log tests completed (visual verification recommended for colors)\n");
+  test_log_status();
   return 0;
 }

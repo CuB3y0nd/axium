@@ -4,8 +4,9 @@
 void test_process_non_existent(void) {
   printf("--- Testing non-existent process ---\n");
   char *const argv[] = {"/bin/non-existent-binary-axium", NULL};
-  tube *t = process(argv, NULL);
-  ASSERT_TRUE(t == NULL, "process() returns NULL for non-existent binary");
+  ASSERT_EXIT_FAIL(
+      { process(argv, NULL); },
+      "process() exits with FAILURE for non-existent binary");
 }
 
 void test_process_ext_partial_capture(void) {
