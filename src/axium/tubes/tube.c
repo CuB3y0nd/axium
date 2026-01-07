@@ -77,11 +77,15 @@ static _HOT ssize_t _send_raw(tube *t, const void *data, size_t size) {
 }
 
 _HOT ssize_t send(tube *t, const void *data, size_t size) {
+  if (unlikely(!t))
+    log_error("send: tube is NULL");
   _log_debug_data("Sent", data, size);
   return _send_raw(t, data, size);
 }
 
 ssize_t sendline(tube *t, const void *data, size_t size) {
+  if (unlikely(!t))
+    log_error("sendline: tube is NULL");
   char stack_buf[1024];
   char *buf;
   if (likely(size < sizeof(stack_buf))) {
@@ -100,6 +104,8 @@ ssize_t sendline(tube *t, const void *data, size_t size) {
 }
 
 _HOT ssize_t recv(tube *t, void *buf, size_t size, double timeout) {
+  if (unlikely(!t))
+    log_error("recv: tube is NULL");
   if (unlikely(t->read_fd == -1))
     return -1;
   timeout = _get_timeout(t, timeout);
@@ -118,6 +124,8 @@ _HOT ssize_t recv(tube *t, void *buf, size_t size, double timeout) {
 
 _HOT void *recvuntil(tube *t, const char *delim, double timeout,
                      size_t *out_size) {
+  if (unlikely(!t))
+    log_error("recvuntil: tube is NULL");
   if (unlikely(t->read_fd == -1))
     return NULL;
 
@@ -198,11 +206,15 @@ _HOT void *recvuntil(tube *t, const char *delim, double timeout,
 }
 
 void *recvline(tube *t, double timeout, size_t *out_size) {
+  if (unlikely(!t))
+    log_error("recvline: tube is NULL");
   return recvuntil(t, "\n", timeout, out_size);
 }
 
 _HOT void **recvlines(tube *t, size_t numlines, double timeout,
                       size_t *out_count) {
+  if (unlikely(!t))
+    log_error("recvlines: tube is NULL");
   if (unlikely(numlines == 0))
     return NULL;
 
@@ -244,6 +256,8 @@ _HOT void **recvlines(tube *t, size_t numlines, double timeout,
 }
 
 _HOT void *recvall(tube *t, double timeout, size_t *out_size) {
+  if (unlikely(!t))
+    log_error("recvall: tube is NULL");
   if (unlikely(t->read_fd == -1))
     return NULL;
   timeout = _get_timeout(t, timeout);
@@ -300,6 +314,8 @@ _HOT void *recvall(tube *t, double timeout, size_t *out_size) {
 
 _FLATTEN void *sendafter(tube *t, const char *delim, const void *data,
                          size_t size, double timeout, size_t *out_size) {
+  if (unlikely(!t))
+    log_error("sendafter: tube is NULL");
   void *res = recvuntil(t, delim, timeout, out_size);
   send(t, data, size);
   return res;
@@ -307,6 +323,8 @@ _FLATTEN void *sendafter(tube *t, const char *delim, const void *data,
 
 _FLATTEN void *sendlineafter(tube *t, const char *delim, const void *data,
                              size_t size, double timeout, size_t *out_size) {
+  if (unlikely(!t))
+    log_error("sendlineafter: tube is NULL");
   void *res = recvuntil(t, delim, timeout, out_size);
   sendline(t, data, size);
   return res;
@@ -314,17 +332,23 @@ _FLATTEN void *sendlineafter(tube *t, const char *delim, const void *data,
 
 _FLATTEN void *sendthen(tube *t, const char *delim, const void *data,
                         size_t size, double timeout, size_t *out_size) {
+  if (unlikely(!t))
+    log_error("sendthen: tube is NULL");
   send(t, data, size);
   return recvuntil(t, delim, timeout, out_size);
 }
 
 _FLATTEN void *sendlinethen(tube *t, const char *delim, const void *data,
                             size_t size, double timeout, size_t *out_size) {
+  if (unlikely(!t))
+    log_error("sendlinethen: tube is NULL");
   sendline(t, data, size);
   return recvuntil(t, delim, timeout, out_size);
 }
 
 void interactive(tube *t, const char *prompt) {
+  if (unlikely(!t))
+    log_error("interactive: tube is NULL");
   log_info("Switching to interactive mode");
   struct pollfd fds[3];
   int nfds = 2;

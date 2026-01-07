@@ -2,6 +2,7 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 static log_level_t current_log_level = INFO;
@@ -58,6 +59,7 @@ void log_error(const char *fmt, ...) {
   va_start(args, fmt);
   vlog(ERROR, "ERROR", ANSI_ON_RED ANSI_WHITE, fmt, args);
   va_end(args);
+  exit(EXIT_FAILURE);
 }
 
 void log_exception(const char *fmt, ...) {

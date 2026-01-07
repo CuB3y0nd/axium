@@ -13,7 +13,6 @@ process_ext(char *const argv[], char *const envp[], tube_flags_t flags) {
   tube *t = malloc(sizeof(*t));
   if (!t) {
     log_error("malloc failed for tube struct");
-    return NULL;
   }
 
   t->write_fd = t->read_fd = t->stderr_fd = -1;
@@ -24,18 +23,15 @@ process_ext(char *const argv[], char *const envp[], tube_flags_t flags) {
   for (int i = 0; i < 3; i++) {
     if ((flags & flag_list[i]) && pipe2(pipes[i], O_CLOEXEC) == -1) {
       log_exception("Failed to create pipe %d", i);
-      goto fail;
     }
   }
   if (pipe2(sync_pipe, O_CLOEXEC) == -1) {
     log_exception("Failed to create sync pipe");
-    goto fail;
   }
 
   pid = fork();
   if (pid == -1) {
     log_exception("fork failed");
-    goto fail;
   }
 
   if (pid == 0) {
@@ -76,12 +72,8 @@ process_ext(char *const argv[], char *const envp[], tube_flags_t flags) {
       errno = exec_err;
     }
     log_exception("process: exec failed for '%s'", argv[0]);
-    waitpid(pid, NULL, 0);
-    goto fail;
   } else if (n == -1) { // Read error
     log_exception("process: failed to read from sync pipe");
-    waitpid(pid, NULL, 0);
-    goto fail;
   }
 
   if (flags & TUBE_STDIN) {
@@ -99,20 +91,6 @@ process_ext(char *const argv[], char *const envp[], tube_flags_t flags) {
 
   t->pid = pid;
   return t;
-
-fail:
-  for (int i = 0; i < 3; i++) {
-    if (pipes[i][0] != -1) {
-      close(pipes[i][0]);
-      close(pipes[i][1]);
-    }
-  }
-  if (sync_pipe[0] != -1)
-    close(sync_pipe[0]);
-  if (sync_pipe[1] != -1)
-    close(sync_pipe[1]);
-  free(t);
-  return NULL;
 }
 
 tube *process(char *const argv[], char *const envp[]) {

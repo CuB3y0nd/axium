@@ -34,10 +34,10 @@ _LOG_ATTR void log_failure(const char *fmt, ...);
 _LOG_ATTR void log_info(const char *fmt, ...);
 /** @brief Logs a warning message. */
 _LOG_ATTR _LOG_COLD void log_warning(const char *fmt, ...);
-/** @brief Logs an error message. */
+/** @brief Logs an error message and exits the program. */
 _LOG_ATTR _LOG_COLD void log_error(const char *fmt, ...);
-/** @brief Logs an exception message with [ERROR] prefix and appends the system
- * error from errno. */
+/** @brief Logs an exception message with [ERROR] prefix, appends the system
+ * error from errno, and exits the program. */
 _LOG_ATTR _LOG_COLD void log_exception(const char *fmt, ...);
 /** @brief Logs a critical message. */
 _LOG_ATTR _LOG_COLD void log_critical(const char *fmt, ...);
