@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 #define ASSERT_TRUE(condition, message)                                        \
   do {                                                                         \
@@ -13,6 +15,21 @@
       exit(EXIT_FAILURE);                                                      \
     } else {                                                                   \
       printf("%s ... ok\n", message);                                          \
+    }                                                                          \
+  } while (0)
+
+#define ASSERT_EXIT_FAIL(code_block, message)                                  \
+  do {                                                                         \
+    fflush(stdout);                                                            \
+    pid_t pid = fork();                                                        \
+    if (pid == 0) {                                                            \
+      code_block;                                                              \
+      exit(EXIT_SUCCESS);                                                      \
+    } else {                                                                   \
+      int status;                                                              \
+      waitpid(pid, &status, 0);                                                \
+      ASSERT_TRUE(WIFEXITED(status) && WEXITSTATUS(status) == EXIT_FAILURE,    \
+                  message);                                                    \
     }                                                                          \
   } while (0)
 
