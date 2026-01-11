@@ -45,9 +45,10 @@ int main() {
   PAYLOAD_PUSH_SC(&p, ksc_escalate_sc);
   PAYLOAD_PUSH_SC(&p, usc_template_sc);
 
-  // Initially, markers SC_M(1) and SC_M(2) exist in multiple places
-  uint64_t m1 = SC_M(1);
-  uint64_t m2 = SC_M(2);
+  // Initially, markers SC_M(uint64_t, 1) and SC_M(uint64_t, 2) exist in
+  // multiple places
+  uint64_t m1 = SC_M(uint64_t, 1);
+  uint64_t m2 = SC_M(uint64_t, 2);
   ASSERT_TRUE(find_u64(&p, m1), "Marker 1 exists before fix");
   ASSERT_TRUE(find_u64(&p, m2), "Marker 2 exists before fix");
 
