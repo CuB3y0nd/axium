@@ -7,10 +7,10 @@ DEFINE_SHELLCODE(ksc_escalate_sc) {
   SHELLCODE_START(ksc_escalate_sc);
   __asm__ volatile(
       "xor edi, edi\n"
-      "mov rax, " XSTR(SC_M(1)) "\n"
+      "mov rax, " XSTR(SC_M(uint64_t, 1)) "\n"
       "call rax\n"
       "xchg rdi, rax\n"
-      "mov rax, " XSTR(SC_M(2)) "\n"
+      "mov rax, " XSTR(SC_M(uint64_t, 2)) "\n"
       "jmp rax\n");
   SHELLCODE_END(ksc_escalate_sc);
 }

@@ -53,19 +53,26 @@
   } while (0)
 
 /**
- * @brief Generate a unique 64-bit marker for shellcode templates.
- * @param id A unique identifier (0-0xFFFFFFFF).
+ * @brief Generate a unique marker for shellcode templates.
+ * @param type The type of the value (uint32_t or uint64_t).
+ * @param id A unique identifier.
  */
-#define SC_M(id) (0xCAFEBABE00000000ULL | (id))
+#define SC_M_uint64_t(id) (0xCAFEBABE00000000 | (id))
+#define SC_M_uint32_t(id) (0xC0DE0000 | (id))
+#define SC_M(type, id) SC_M_##type(id)
 
 /**
  * @brief Fixup a marker in the payload with a concrete value.
+ *
+ * The marker size is automatically determined by the type of 'val'.
+ *
  * @param p Pointer to the payload.
  * @param id The marker ID used in the shellcode.
  * @param val The value to replace the marker with.
  */
-static inline void sc_fix(payload_t *p, uint32_t id, uint64_t val) {
-  payload_patch_u64(p, SC_M(id), val);
-}
+#define sc_fix(p, id, val)                                                     \
+  _Generic((val),                                                              \
+      uint32_t: payload_patch_u32(p, SC_M(uint32_t, id), (uint32_t)(val)),     \
+      uint64_t: payload_patch_u64(p, SC_M(uint64_t, id), (uint64_t)(val)))
 
 #endif // AXIUM_SHELLCRAFT_COMMON_H

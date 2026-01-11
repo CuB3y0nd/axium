@@ -10,7 +10,8 @@
  * Instructions:
  * 1. Copy this file to this directory and rename it (e.g., my_snippets.h).
  * 2. Use 'static DEFINE_SHELLCODE' to define the assembly template.
- * 3. Use SC_M(id) as placeholders for values to be patched.
+ * 3. Use SC_M(uint64_t, id) or SC_M(uint32_t, id) as placeholders for values
+ *    to be patched.
  * 4. Provide a 'static inline' helper function that utilizes PAYLOAD_PUSH_SC
  *    and sc_fix.
  */
@@ -26,8 +27,8 @@
 static DEFINE_SHELLCODE(usc_template_sc) {
   SHELLCODE_START(usc_template_sc);
   __asm__ volatile(
-      "mov rax, " XSTR(SC_M(1)) "\n" // Placeholder 1: Target address
-      "mov rdi, " XSTR(SC_M(2)) "\n" // Placeholder 2: First argument
+      "mov rax, " XSTR(SC_M(uint64_t, 1)) "\n" // Placeholder 1: Target address
+      "mov rdi, " XSTR(SC_M(uint64_t, 2)) "\n" // Placeholder 2: First argument
       "call rax\n"
       "ret\n");
   SHELLCODE_END(usc_template_sc);
