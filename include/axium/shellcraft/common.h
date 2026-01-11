@@ -58,7 +58,7 @@
  * @param id A unique identifier.
  */
 #define SC_M_uint64_t(id) (0xCAFEBABE00000000 | (id))
-#define SC_M_uint32_t(id) (0xC0DE0000 | (id))
+#define SC_M_uint32_t(id) (0x13370000 | (id))
 #define SC_M(type, id) SC_M_##type(id)
 
 /**
