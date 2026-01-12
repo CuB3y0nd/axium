@@ -53,7 +53,7 @@ make SRC=my_exp.c bundle
 
 ### Run Test Suites
 
-Every file in `tests/*.c` is treated as an independent binary.
+Every file in `src/tests/**/*.c` is treated as an independent binary.
 
 ```bash
 make test
