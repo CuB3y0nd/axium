@@ -5,6 +5,7 @@ compile_commands.json
 /exp
 /exp.c
 *.b64
+*_bundled.*
 
 /src/tests/**
 !/src/tests/**/
