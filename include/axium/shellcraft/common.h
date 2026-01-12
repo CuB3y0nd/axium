@@ -75,4 +75,18 @@
       uint32_t: payload_patch_u32(p, SC_M(uint32_t, id), (uint32_t)(val)),     \
       uint64_t: payload_patch_u64(p, SC_M(uint64_t, id), (uint64_t)(val)))
 
+/**
+ * @brief Fixup a marker in the payload with a relative displacement.
+ *
+ * The marker size is automatically determined by the type of 'val'.
+ *
+ * @param p Pointer to the payload.
+ * @param id The marker ID used in the shellcode.
+ * @param val The relative displacement value to replace the marker with.
+ */
+#define sc_fix_rel(p, id, val)                                                 \
+  _Generic((val),                                                              \
+      uint32_t: payload_patch_rel32(p, SC_M(uint32_t, id), (uint32_t)(val)),   \
+      uint64_t: payload_patch_rel64(p, SC_M(uint64_t, id), (uint64_t)(val)))
+
 #endif // AXIUM_SHELLCRAFT_COMMON_H
