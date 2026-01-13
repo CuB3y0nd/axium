@@ -1,3 +1,8 @@
+/**
+ * @file common.h
+ * @brief Common macros and definitions for shellcraft.
+ */
+
 #ifndef AXIUM_SHELLCRAFT_COMMON_H
 #define AXIUM_SHELLCRAFT_COMMON_H
 
@@ -8,7 +13,7 @@
 /** @brief Expand and stringify a macro argument. */
 #define XSTR(x) STR(x)
 
-/** @brief Attribute for naked functions (no prologue/epilogue) */
+/** @brief Attribute for naked functions (no prologue/epilogue) . */
 #define NAKED __attribute__((naked))
 
 /**
@@ -41,7 +46,7 @@
 /* clang-format on */
 
 /**
- * @brief Append shellcode defined via DEFINE_SHELLCODE to a payload.
+ * @brief Append shellcode defined via `DEFINE_SHELLCODE` to a payload.
  * @param p Pointer to the payload.
  * @param name Name of the shellcode function.
  */
@@ -53,18 +58,23 @@
   } while (0)
 
 /**
- * @brief Generate a unique marker for shellcode templates.
- * @param type The type of the value (uint32_t or uint64_t).
+ * @brief Markers for shellcode templates.
  * @param id A unique identifier.
  */
 #define SC_M_uint64_t(id) (0xCAFEBABE00000000 | (id))
 #define SC_M_uint32_t(id) (0x13370000 | (id))
+
+/**
+ * @brief Generate a unique marker for shellcode templates.
+ * @param type The type of the value (uint32_t or uint64_t) .
+ * @param id A unique identifier.
+ */
 #define SC_M(type, id) SC_M_##type(id)
 
 /**
  * @brief Fixup a marker in the payload with a concrete value.
  *
- * The marker size is automatically determined by the type of 'val'.
+ * The marker size is automatically determined by the type of `val` .
  *
  * @param p Pointer to the payload.
  * @param id The marker ID used in the shellcode.
@@ -78,7 +88,7 @@
 /**
  * @brief Fixup a marker in the payload with a relative displacement.
  *
- * The marker size is automatically determined by the type of 'val'.
+ * The marker size is automatically determined by the type of `val` .
  *
  * @param p Pointer to the payload.
  * @param id The marker ID used in the shellcode.

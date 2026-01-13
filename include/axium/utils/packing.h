@@ -1,3 +1,11 @@
+/**
+ * @file packing.h
+ * @brief Endian-aware integer packing and unpacking utilities.
+ *
+ * Provides functions for converting between _host-order integers_ and
+ * _Little-Endian/Big-Endian representations_ .
+ */
+
 #ifndef AXIUM_PACKING_H
 #define AXIUM_PACKING_H
 
@@ -42,7 +50,7 @@ __swap64(uint64_t v) {
 }
 
 /**
- * @brief "Pack" an 8-bit integer (identity function).
+ * @brief Pack an 8-bit integer (identity function) .
  * @param v The 8-bit value.
  * @return The same 8-bit value.
  */

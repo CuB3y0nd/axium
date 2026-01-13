@@ -1,15 +1,43 @@
+/**
+ * @file log.h
+ * @brief Logging utilities for the Axium library.
+ *
+ * Provides various logging levels and formatted output with ANSI colors.
+ */
+
 #ifndef AXIUM_LOG_H
 #define AXIUM_LOG_H
 
 #include <stdbool.h>
 
-typedef enum { DEBUG = 0, INFO, WARNING, ERROR, CRITICAL } log_level_t;
+/**
+ * @brief Log levels for filtering output.
+ */
+typedef enum {
+  DEBUG = 0, /**< Fine-grained informational events that are most useful to
+                debug an application. */
+  INFO,      /**< Informational messages that highlight the progress of the
+                application at coarse-grained level. */
+  WARNING,   /**< Potentially harmful situations. */
+  ERROR,   /**< Error events that might still allow the application to continue
+              running. */
+  CRITICAL /**< Very severe error events that will presumably lead the
+              application to abort. */
+} log_level_t;
 
-/** @brief Sets the global log level. Logs below this level will not be printed.
+/**
+ * @brief Sets the global log level.
+ *
+ * Logs with a level below the specified level will not be printed.
+ *
+ * @param level The minimum log level to display.
  */
 void set_log_level(log_level_t level);
 
-/** @brief Returns the current global log level. */
+/**
+ * @brief Returns the current global log level.
+ * @return The current log_level_t.
+ */
 log_level_t get_log_level(void);
 
 #define ANSI_RESET "\033[0m"

@@ -1,3 +1,8 @@
+/**
+ * @file proc.h
+ * @brief Process monitoring and PID utilities.
+ */
+
 #ifndef AXIUM_PROC_H
 #define AXIUM_PROC_H
 
@@ -29,9 +34,10 @@ __attribute__((warn_unused_result)) static inline bool pid_exists(pid_t pid) {
  * @brief Waits for a given PID to become visible.
  *
  * @param pid The process ID to wait for.
- * @param timeout Maximum time to wait in milliseconds. 0 means infinite.
+ * @param timeout_ms Maximum time to wait in milliseconds. 0 means infinite.
  * @return true if the process became visible, false on timeout.
  */
-__attribute__((warn_unused_result)) bool wait_for_pid(pid_t pid, long timeout);
+__attribute__((warn_unused_result)) bool wait_for_pid(pid_t pid,
+                                                      long timeout_ms);
 
 #endif // AXIUM_PROC_H

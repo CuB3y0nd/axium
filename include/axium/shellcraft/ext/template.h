@@ -8,12 +8,11 @@
  * @brief Reference template for user-defined shellcode snippets.
  *
  * Instructions:
- * 1. Copy this file to this directory and rename it (e.g., my_snippets.h).
- * 2. Use 'static DEFINE_SHELLCODE' to define the assembly template.
- * 3. Use SC_M(uint64_t, id) or SC_M(uint32_t, id) as placeholders for values
- *    to be patched.
- * 4. Provide a 'static inline' helper function that utilizes PAYLOAD_PUSH_SC
- *    and sc_fix.
+ * 1. Copy this file to this directory and rename it (e.g., `my_snippets.h`) .
+ * 2. Use `static DEFINE_SHELLCODE` to define the assembly template.
+ * 3. Use `SC_M(type, id)` as placeholders for values to be patched.
+ * 4. Provide a `static inline` helper function that utilizes `PAYLOAD_PUSH_SC`
+ *    and `sc_fix` .
  */
 
 #if defined(__x86_64__)

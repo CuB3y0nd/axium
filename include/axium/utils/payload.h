@@ -1,3 +1,8 @@
+/**
+ * @file payload.h
+ * @brief Dynamic payload construction and patching.
+ */
+
 #ifndef AXIUM_PAYLOAD_H
 #define AXIUM_PAYLOAD_H
 
@@ -51,7 +56,7 @@ void payload_push_str(payload_t *p, const char *s)
  *
  * @param p Pointer to the payload.
  * @param offset Target offset relative to payload start.
- * @param filler Pattern to use for filling. If NULL or filler_size is 0, \x00
+ * @param filler Pattern to use for filling. If NULL or filler_size is 0, \\x00
  * is used.
  * @param filler_size Size of the filler pattern in bytes.
  */
