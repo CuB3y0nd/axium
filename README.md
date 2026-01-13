@@ -64,3 +64,7 @@ make test
 ```bash
 make clean
 ```
+
+## Sponsors
+
+Special thanks to my friend **Vlex** for donating the domain [hyphony.com](https://hyphony.com) to this project.
