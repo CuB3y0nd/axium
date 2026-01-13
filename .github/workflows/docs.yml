@@ -1,0 +1,36 @@
+name: Deploy Doxygen Documentation to Vercel
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # 00:00 (UTC)
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Doxygen
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y doxygen
+
+      - name: Generate Documentation
+        run: |
+          cd docs/doxygen
+          doxygen Doxyfile
+          cp vercel.json html/
+
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: "--prod"
+          working-directory: ./docs/doxygen/html
+
