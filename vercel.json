@@ -1,3 +1,7 @@
 {
-  "ignoreBuildStep": "true"
+  "github": {
+    "silent": true
+  },
+  "buildCommand": "exit 0",
+  "installCommand": "exit 0"
 }
