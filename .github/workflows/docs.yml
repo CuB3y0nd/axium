@@ -1,4 +1,4 @@
-name: Deploy Doxygen Documentation to Vercel
+name: Deploy Doxygen Documentation
 
 on:
   schedule:
@@ -8,6 +8,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: Doxygen
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -33,4 +34,3 @@ jobs:
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           vercel-args: "--prod"
           working-directory: ./docs/doxygen/html
-
