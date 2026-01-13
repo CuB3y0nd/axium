@@ -1,6 +1,7 @@
 html/
 .cache/
 compile_commands.json
+.vercel
 
 **/*.o
 /exp
