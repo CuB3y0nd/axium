@@ -1,8 +1,10 @@
 /**
  * @file log.h
- * @brief Logging utilities for the Axium library.
  *
- * Provides various logging levels and formatted output with ANSI colors.
+ * Provides logging utilities for the Axium library.
+ *
+ * This file contains various logging levels and formatted output with ANSI
+ * colors.
  */
 
 #ifndef AXIUM_LOG_H
@@ -10,33 +12,28 @@
 
 #include <stdbool.h>
 
-/**
- * @brief Log levels for filtering output.
- */
+/** Log levels for filtering output. */
 typedef enum {
-  DEBUG = 0, /**< Fine-grained informational events that are most useful to
-                debug an application. */
-  INFO,      /**< Informational messages that highlight the progress of the
-                application at coarse-grained level. */
+  DEBUG = 0, /**< Fine-grained informational events for debugging. */
+  INFO,      /**< Informational messages that highlight progress. */
   WARNING,   /**< Potentially harmful situations. */
-  ERROR,   /**< Error events that might still allow the application to continue
-              running. */
-  CRITICAL /**< Very severe error events that will presumably lead the
-              application to abort. */
+  ERROR,     /**< Error events that might allow the application to continue. */
+  CRITICAL   /**< Severe error events that lead the application to abort. */
 } log_level_t;
 
 /**
- * @brief Sets the global log level.
+ * Sets the global log level.
  *
- * Logs with a level below the specified level will not be printed.
+ * Logs with a level below the specified level are not printed.
  *
- * @param level The minimum log level to display.
+ * @param level Minimum log level to display.
  */
 void set_log_level(log_level_t level);
 
 /**
- * @brief Returns the current global log level.
- * @return The current log_level_t.
+ * Returns the current global log level.
+ *
+ * @return Current log level.
  */
 log_level_t get_log_level(void);
 
@@ -54,27 +51,29 @@ log_level_t get_log_level(void);
   __attribute__((format(printf, 1, 2))) __attribute__((nonnull(1)))
 #define _LOG_COLD __attribute__((cold))
 
-/** @brief Logs a success message. */
+/** Logs a success message. */
 _LOG_ATTR void log_success(const char *fmt, ...);
-/** @brief Logs a failure message. */
+/** Logs a failure message. */
 _LOG_ATTR void log_failure(const char *fmt, ...);
-/** @brief Logs an informational message. */
+/** Logs an informational message. */
 _LOG_ATTR void log_info(const char *fmt, ...);
-/** @brief Logs a warning message. */
+/** Logs a warning message. */
 _LOG_ATTR _LOG_COLD void log_warning(const char *fmt, ...);
-/** @brief Logs an error message and exits the program. */
+/** Logs an error message and exits the program. */
 _LOG_ATTR _LOG_COLD void log_error(const char *fmt, ...);
-/** @brief Logs an exception message with [ERROR] prefix, appends the system
- * error from errno, and exits the program. */
+/**
+ * Logs an exception message with `[ERROR]` prefix, appends the system error from
+ * `errno`, and exits the program.
+ */
 _LOG_ATTR _LOG_COLD void log_exception(const char *fmt, ...);
-/** @brief Logs a critical message. */
+/** Logs a critical message. */
 _LOG_ATTR _LOG_COLD void log_critical(const char *fmt, ...);
-/** @brief Logs a debug message, visible only if log level is DEBUG. */
+/** Logs a debug message, visible only if log level is `DEBUG`. */
 _LOG_ATTR void log_debug(const char *fmt, ...);
-/** @brief Logs a status message. */
+/** Logs a status message. */
 _LOG_ATTR void log_status(const char *fmt, ...);
 
-/** @brief Logs an informational message only once at the given call site. */
+/** Logs an informational message only once at the given call site. */
 #define log_info_once(fmt, ...)                                                \
   do {                                                                         \
     static bool _log_once = false;                                             \
@@ -84,7 +83,7 @@ _LOG_ATTR void log_status(const char *fmt, ...);
     }                                                                          \
   } while (0)
 
-/** @brief Logs a warning message only once at the given call site. */
+/** Logs a warning message only once at the given call site. */
 #define log_warning_once(fmt, ...)                                             \
   do {                                                                         \
     static bool _log_once = false;                                             \

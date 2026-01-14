@@ -15,7 +15,7 @@ void payload_fini(payload_t *p) {
   p->capacity = 0;
 }
 
-/** @brief Internal helper to ensure buffer capacity. */
+/** Internal helper to ensure buffer capacity. */
 static inline bool ensure_capacity(payload_t *p, size_t needed) {
   if (needed <= p->capacity)
     return true;
@@ -70,7 +70,7 @@ void payload_fill_to(payload_t *p, size_t offset, const void *filler,
   p->size = offset;
 }
 
-/** @brief Internal helper for relative patching. */
+/** Internal helper for relative patching. */
 static void __attribute__((hot, nonnull(1, 2)))
 patch_rel_generic(payload_t *p, const void *marker, size_t marker_size,
                   size_t target_offset) {

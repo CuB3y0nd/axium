@@ -26,8 +26,7 @@ _INLINE void _log_debug_data(const char *msg, const void *data, size_t size) {
 }
 
 /**
- * @brief Resolves the effective timeout value, handling the TIMEOUT_DEFAULT
- * sentinel.
+ * Resolves the effective timeout value, handling the `TIMEOUT_DEFAULT` sentinel.
  */
 _INLINE double _get_timeout(tube *t, double timeout) {
   if (timeout == TIMEOUT_DEFAULT) {
@@ -37,7 +36,8 @@ _INLINE double _get_timeout(tube *t, double timeout) {
 }
 
 /**
- * @brief Waits for data to be available on a file descriptor using poll.
+ * Waits for data to be available on a file descriptor using `poll`.
+ *
  * @return 1 if data is available, 0 on timeout, -1 on error.
  */
 _HOT _INLINE int _wait_read(int fd, double timeout) {

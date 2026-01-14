@@ -1,6 +1,7 @@
 /**
  * @file snippets.h
- * @brief Pre-defined shellcode snippets for common exploitation tasks.
+ *
+ * Provides pre-defined shellcode snippets for common exploitation tasks.
  */
 
 #ifndef AXIUM_SHELLCRAFT_SNIPPETS_H
@@ -15,13 +16,13 @@ extern "C" {
 
 /**
  * @defgroup sc_snippets Shellcode Snippets
- * @brief Common shellcode snippets.
+ *
+ * Common shellcode snippets.
  * @{
  */
 
 /**
- * @brief Kernel: Escalate privileges via
- * `commit_creds(prepare_kernel_cred(0))` .
+ * Kernel: Escalates privileges via `commit_creds(prepare_kernel_cred(0))`.
  *
  * @param p Pointer to the payload.
  * @param pkc Address of prepare_kernel_cred.

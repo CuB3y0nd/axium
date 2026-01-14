@@ -1,6 +1,7 @@
 /**
  * @file common.h
- * @brief Common macros and definitions for shellcraft.
+ *
+ * Provides common macros and definitions for shellcraft.
  */
 
 #ifndef AXIUM_SHELLCRAFT_COMMON_H
@@ -8,23 +9,25 @@
 
 #include <axium/utils/payload.h>
 
-/** @brief Stringify a macro argument. */
+/** Stringifies a macro argument. */
 #define STR(x) #x
-/** @brief Expand and stringify a macro argument. */
+/** Expands and stringifies a macro argument. */
 #define XSTR(x) STR(x)
 
-/** @brief Attribute for naked functions (no prologue/epilogue) . */
+/** Attribute for naked functions (no prologue/epilogue). */
 #define NAKED __attribute__((naked))
 
 /**
- * @brief Define shellcode boundaries for a naked function.
+ * Defines shellcode boundaries for a naked function.
+ *
  * @param name Function name.
  */
 #define DEFINE_SHELLCODE(name) NAKED void name(void)
 
 /* clang-format off */
 /**
- * @brief Inline assembly markers for the start of shellcode.
+ * Inline assembly markers for the start of shellcode.
+ *
  * @param name Function name.
  */
 #define SHELLCODE_START(name)                                                  \
@@ -35,7 +38,8 @@
   )
 
 /**
- * @brief Inline assembly markers for the end of shellcode.
+ * Inline assembly markers for the end of shellcode.
+ *
  * @param name Function name.
  */
 #define SHELLCODE_END(name)                                                    \
@@ -46,7 +50,8 @@
 /* clang-format on */
 
 /**
- * @brief Append shellcode defined via `DEFINE_SHELLCODE` to a payload.
+ * Appends shellcode defined via `DEFINE_SHELLCODE` to a payload.
+ *
  * @param p Pointer to the payload.
  * @param name Name of the shellcode function.
  */
@@ -57,28 +62,26 @@
     payload_push((p), name##_start, (size_t)(name##_end - name##_start));      \
   } while (0)
 
-/**
- * @brief Markers for shellcode templates.
- * @param id A unique identifier.
- */
+/** Markers for shellcode templates. */
 #define SC_M_uint64_t(id) (0xCAFEBABE00000000 | (id))
 #define SC_M_uint32_t(id) (0x13370000 | (id))
 
 /**
- * @brief Generate a unique marker for shellcode templates.
- * @param type The type of the value (uint32_t or uint64_t) .
- * @param id A unique identifier.
+ * Generates a unique marker for shellcode templates.
+ *
+ * @param type Type of the value (`uint32_t` or `uint64_t`).
+ * @param id Unique identifier.
  */
 #define SC_M(type, id) SC_M_##type(id)
 
 /**
- * @brief Fixup a marker in the payload with a concrete value.
+ * Fixes up a marker in the payload with a concrete value.
  *
- * The marker size is automatically determined by the type of `val` .
+ * The marker size is automatically determined by the type of `val`.
  *
  * @param p Pointer to the payload.
- * @param id The marker ID used in the shellcode.
- * @param val The value to replace the marker with.
+ * @param id Marker ID used in the shellcode.
+ * @param val Value to replace the marker with.
  */
 #define sc_fix(p, id, val)                                                     \
   _Generic((val),                                                              \
@@ -86,13 +89,13 @@
       uint64_t: payload_patch_u64(p, SC_M(uint64_t, id), (uint64_t)(val)))
 
 /**
- * @brief Fixup a marker in the payload with a relative displacement.
+ * Fixes up a marker in the payload with a relative displacement.
  *
- * The marker size is automatically determined by the type of `val` .
+ * The marker size is automatically determined by the type of `val`.
  *
  * @param p Pointer to the payload.
- * @param id The marker ID used in the shellcode.
- * @param val The relative displacement value to replace the marker with.
+ * @param id Marker ID used in the shellcode.
+ * @param val Relative displacement value to replace the marker with.
  */
 #define sc_fix_rel(p, id, val)                                                 \
   _Generic((val),                                                              \

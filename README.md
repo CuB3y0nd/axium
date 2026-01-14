@@ -8,13 +8,13 @@
 
 Axium is not a framework, and it is not a collection of tricks. It is a set of low-level primitives refined through repetition: touching memory, interfering with object lifetimes, and shifting the boundaries between data flow and control flow.
 
-There is no “automatic exploitation” here. Only a dialogue between you and the kernel about causality, assumptions, and cost.
+There is no "automatic exploitation" here. Only a dialogue between you and the kernel about causality, assumptions, and cost.
 
 ## Usage
 
 Axium makes it easy to iterate on exploits without fighting the build system.
 
-### Build the Workspace
+### Build the workspace
 
 The default workspace is `exp.c`.
 
@@ -37,7 +37,7 @@ Or specify the source explicitly:
 make SRC=my_exp.c
 ```
 
-### Bundling for Submission
+### Bundling for submission
 
 Axium can generate a single "amalgamated" C file that includes both your script and the entire library source. This is ideal for CTF write-ups or environments where you cannot easily upload multiple files.
 
@@ -49,9 +49,9 @@ make bundle
 make SRC=my_exp.c bundle
 ```
 
-*Note: Building any script (e.g., `make my_exp`) automatically generates its bundled version.*
+*Note: Building any script (for example, `make my_exp`) automatically generates its bundled version.*
 
-### Run Test Suites
+### Run test suites
 
 Every file in `src/tests/**/*.c` is treated as an independent binary.
 
@@ -67,4 +67,4 @@ make clean
 
 ## Sponsors
 
-Special thanks to my friend **Vlex** for donating the domain [hyphony.com](https://hyphony.com) to this project.
+Special thanks to **Vlex** for donating the domain [hyphony.com](https://hyphony.com) to this project.

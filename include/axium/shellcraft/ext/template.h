@@ -5,14 +5,15 @@
 
 /**
  * @file template.h
- * @brief Reference template for user-defined shellcode snippets.
+ *
+ * Reference template for user-defined shellcode snippets.
  *
  * Instructions:
- * 1. Copy this file to this directory and rename it (e.g., `my_snippets.h`) .
+ * 1. Copy this file to this directory and rename it (for example, `my_snippets.h`).
  * 2. Use `static DEFINE_SHELLCODE` to define the assembly template.
  * 3. Use `SC_M(type, id)` as placeholders for values to be patched.
  * 4. Provide a `static inline` helper function that utilizes `PAYLOAD_PUSH_SC`
- *    and `sc_fix` .
+ *    and `sc_fix`.
  */
 
 #if defined(__x86_64__)
@@ -37,7 +38,8 @@ static DEFINE_SHELLCODE(usc_template_sc) {
 /* --- 2. Helper Function --- */
 
 /**
- * @brief Example template helper function.
+ * Example template helper function.
+ *
  * @param p Pointer to the payload.
  * @param target Target function address.
  * @param arg Argument for the function.

@@ -6,11 +6,11 @@
 static const char HEX_CHARS[] = "0123456789abcdef";
 
 /**
- * @brief Fast string append function.
+ * Fast string append function.
  *
  * @param dst Destination buffer to append to.
  * @param src Source string to append.
- * @return char* Pointer to the end of the appended string in dst.
+ * @return Pointer to the end of the appended string in dst.
  */
 static inline char *fast_append(char *dst, const char *src) {
   if (!src)
@@ -21,12 +21,11 @@ static inline char *fast_append(char *dst, const char *src) {
 }
 
 /**
- * @brief Formats a single byte into hex and ASCII buffers with optional
- * coloring.
+ * Formats a single byte into hex and ASCII buffers with optional coloring.
  *
- * @param c The byte to format.
+ * @param c Byte to format.
  * @param color Whether to use ANSI color codes.
- * @param theme The color theme to use.
+ * @param theme Color theme to use.
  * @param h_ptr Pointer to the current position in the hex output buffer.
  * @param a_ptr Pointer to the current position in the ASCII output buffer.
  */
@@ -70,6 +69,18 @@ static inline void format_byte(unsigned char c, bool color,
   }
 }
 
+/**
+ * Performs a hexdump of the provided data with various options.
+ *
+ * This function outputs a formatted hexdump to `stdout`, including offset,
+ * hex representation, and ASCII representation. It supports color themes,
+ * grouping, and repeated line skipping.
+ *
+ * @param data Data to dump.
+ * @param size Size of the data in bytes.
+ * @param options Pointer to options struct for customization. If `NULL`,
+ *     `HEXDUMP_DEFAULT_OPTIONS` is used.
+ */
 void hexdump(const void *data, size_t size, const hexdump_options *options) {
   hexdump_options opt =
       options ? *options : (hexdump_options)HEXDUMP_DEFAULT_OPTIONS;

@@ -1,6 +1,7 @@
 /**
  * @file axium.h
- * @brief Main header file for the Axium library.
+ *
+ * Contains the main header for the Axium library.
  *
  * This header includes all Axium modules and common standard headers.
  */

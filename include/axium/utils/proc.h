@@ -1,6 +1,7 @@
 /**
  * @file proc.h
- * @brief Process monitoring and PID utilities.
+ *
+ * Provides process monitoring and PID utilities.
  */
 
 #ifndef AXIUM_PROC_H
@@ -12,13 +13,13 @@
 #include <sys/types.h>
 
 /**
- * @brief Checks if a process exists.
+ * Checks if a process exists.
  *
- * Uses kill(pid, 0) which is the most efficient detection method.
+ * Uses `kill(pid, 0)` which is the most efficient detection method.
  *
- * @param pid The process ID to check.
- * @return true if the process exists (even if owned by another user), false
- * otherwise.
+ * @param pid Process ID to check.
+ * @return `true` if the process exists (even if owned by another user), `false`
+ *     otherwise.
  */
 __attribute__((warn_unused_result)) static inline bool pid_exists(pid_t pid) {
   if (pid <= 0) {
@@ -31,11 +32,11 @@ __attribute__((warn_unused_result)) static inline bool pid_exists(pid_t pid) {
 }
 
 /**
- * @brief Waits for a given PID to become visible.
+ * Waits for a given PID to become visible.
  *
- * @param pid The process ID to wait for.
+ * @param pid Process ID to wait for.
  * @param timeout_ms Maximum time to wait in milliseconds. 0 means infinite.
- * @return true if the process became visible, false on timeout.
+ * @return True if the process became visible, false on timeout.
  */
 __attribute__((warn_unused_result)) bool wait_for_pid(pid_t pid,
                                                       long timeout_ms);
