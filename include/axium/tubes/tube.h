@@ -13,14 +13,17 @@
 /**
  * Representation of a communication channel (tube).
  *
- * A tube wraps file descriptors for `stdin`, `stdout`, and `stderr` of a process
- * or a network connection, providing a unified interface for communication.
+ * A tube wraps file descriptors for `stdin`, `stdout`, and `stderr` of a
+ * process or a network connection, providing a unified interface for
+ * communication.
  */
 typedef struct {
-  int read_fd;  /**< File descriptor for reading from the channel. */
-  int write_fd; /**< File descriptor for writing to the channel. */
-  int stderr_fd; /**< File descriptor for reading `stderr`, or `-1` if unavailable. */
-  pid_t pid;    /**< PID of the associated process, or `-1` for non-process tubes. */
+  int read_fd;   /**< File descriptor for reading from the channel. */
+  int write_fd;  /**< File descriptor for writing to the channel. */
+  int stderr_fd; /**< File descriptor for reading `stderr`, or `-1` if
+                    unavailable. */
+  pid_t
+      pid; /**< PID of the associated process, or `-1` for non-process tubes. */
   double timeout; /**< Default timeout for receive operations in seconds. */
 } tube;
 
@@ -195,12 +198,13 @@ void t_free(void *ptr);
  */
 void t_freelines(void **lines);
 
-
 /**
  * Closes the tube and cleans up resources.
  *
  * @param t Pointer to the tube.
  */
 void t_close(tube *t) _TUBE_ATTR_NONNULL;
+
+#undef _TUBE_ATTR_NONNULL
 
 #endif // AXIUM_TUBE_H

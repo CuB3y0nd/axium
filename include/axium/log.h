@@ -62,8 +62,8 @@ _LOG_ATTR _LOG_COLD void log_warning(const char *fmt, ...);
 /** Logs an error message and exits the program. */
 _LOG_ATTR _LOG_COLD void log_error(const char *fmt, ...);
 /**
- * Logs an exception message with `[ERROR]` prefix, appends the system error from
- * `errno`, and exits the program.
+ * Logs an exception message with `[ERROR]` prefix, appends the system error
+ * from `errno`, and exits the program.
  */
 _LOG_ATTR _LOG_COLD void log_exception(const char *fmt, ...);
 /** Logs a critical message. */
@@ -92,5 +92,8 @@ _LOG_ATTR void log_status(const char *fmt, ...);
       _log_once = true;                                                        \
     }                                                                          \
   } while (0)
+
+#undef _LOG_ATTR
+#undef _LOG_COLD
 
 #endif /* AXIUM_LOG_H */
