@@ -1127,7 +1127,8 @@ EXCLUDE_SYMLINKS       = NO
 
 EXCLUDE_PATTERNS       = */exp.c \
                          */*_bundled.c \
-                         */doxygen-awesome-css/README.md
+                         */doxygen-awesome-css/README.md \
+                         */tests/*
 
 # The EXCLUDE_SYMBOLS tag can be used to specify one or more symbol names
 # (namespaces, classes, functions, etc.) that should be excluded from the
