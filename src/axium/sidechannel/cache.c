@@ -1,7 +1,5 @@
 #include <axium/log.h>
 #include <axium/sidechannel/cache.h>
-#include <stdbool.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 uint64_t cache_calibrate_threshold(const void *target) {
@@ -121,6 +119,28 @@ void cache_report(const cache_report_t *report) {
   if (!report)
     return;
 
+  /* Calculate adaptive widths for formatting */
+  int idx_width = 1;
+  size_t temp_count = report->count;
+  while (temp_count >= 10) {
+    temp_count /= 10;
+    idx_width++;
+  }
+
+  uint64_t max_val = 0;
+  for (size_t i = 0; i < report->count; i++) {
+    if (report->timings[i] > max_val)
+      max_val = report->timings[i];
+  }
+  int val_width = 1;
+  uint64_t temp_val = max_val;
+  while (temp_val >= 10) {
+    temp_val /= 10;
+    val_width++;
+  }
+  if (val_width < 4)
+    val_width = 4;
+
   log_info("--- Cache Side-Channel Report ---");
   log_info("Threshold: %lu (Effective: %lu) | Hits: %zu | Gap: %lu",
            report->threshold, report->effective_threshold, report->hits_count,
@@ -146,7 +166,8 @@ void cache_report(const cache_report_t *report) {
       bar[j] = (j < bar_len) ? '#' : ' ';
     bar[20] = '\0';
 
-    log_info("Idx %2zu: [%s] %4lu cycles %s", i, bar, t, marker);
+    log_info("Idx %*zu: [%s] %*lu cycles %s", idx_width, i, bar, val_width, t,
+             marker);
   }
 
   if (report->winner_idx != -1) {
