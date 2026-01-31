@@ -1,0 +1,164 @@
+#include <axium/log.h>
+#include <axium/sidechannel/cache.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+void cache_report(const cache_report_t *report) {
+  if (!report)
+    return;
+
+  /* Calculate adaptive widths for formatting */
+  int idx_width = 1;
+  size_t temp_count = report->count;
+  while (temp_count >= 10) {
+    temp_count /= 10;
+    idx_width++;
+  }
+
+  uint64_t max_val = 0;
+  for (size_t i = 0; i < report->count; i++) {
+    if (report->timings[i] > max_val)
+      max_val = report->timings[i];
+  }
+  int val_width = 1;
+  uint64_t temp_val = max_val;
+  while (temp_val >= 10) {
+    temp_val /= 10;
+    val_width++;
+  }
+  if (val_width < 4)
+    val_width = 4;
+
+  log_info("--- Cache Side-Channel Report ---");
+  log_info("Threshold: %lu (Effective: %lu) | Hits: %zu | Gap: %lu",
+           report->threshold, report->effective_threshold, report->hits_count,
+           report->gap);
+
+  for (size_t i = 0; i < report->count; i++) {
+    uint64_t t = report->timings[i];
+    bool is_hit = t <= report->effective_threshold;
+    bool is_winner = ((int)i == report->winner_idx);
+
+    const char *marker = "";
+    if (is_winner) {
+      marker = (t <= report->threshold) ? " [WINNER]" : " [ADAPTIVE WINNER]";
+    } else if (is_hit) {
+      marker = " [HIT]";
+    }
+
+    char bar[21];
+    size_t bar_len = (t > 500) ? 20 : (t / 25);
+    if (bar_len > 20)
+      bar_len = 20;
+    for (size_t j = 0; j < 20; j++)
+      bar[j] = (j < bar_len) ? '#' : ' ';
+    bar[20] = '\0';
+
+    log_info("Idx %*zu: [%s] %*lu cycles %s", idx_width, i, bar, val_width, t,
+             marker);
+  }
+
+  if (report->winner_idx != -1) {
+    if (report->winner_val > report->threshold) {
+      log_status("Adaptive logic: Winner (%lu) > Threshold (%lu), but Gap "
+                 "(%lu) provides high confidence.",
+                 report->winner_val, report->threshold, report->gap);
+    }
+
+    if (report->gap >= 50) {
+      log_success("High confidence candidate: Index %d (Gap: %lu)",
+                  report->winner_idx, report->gap);
+    } else {
+      log_warning("Low confidence candidate: Index %d (Gap: %lu)",
+                  report->winner_idx, report->gap);
+    }
+  } else {
+    log_failure("Detection failed: No results reached the required latency.");
+  }
+}
+
+int cache_export_report(const cache_report_t *report, const char *filename) {
+  if (!report || !report->timings || !filename)
+    return -1;
+
+  FILE *f = fopen(filename, "w");
+  if (!f) {
+    log_error("Failed to open file for export: %s", filename);
+  }
+
+  fprintf(f, "{\n");
+  fprintf(f, "  \"threshold\": %lu,\n", report->threshold);
+  fprintf(f, "  \"effective_threshold\": %lu,\n", report->effective_threshold);
+  fprintf(f, "  \"winner_idx\": %d,\n", report->winner_idx);
+  fprintf(f, "  \"winner_val\": %lu,\n", report->winner_val);
+  fprintf(f, "  \"gap\": %lu,\n", report->gap);
+  fprintf(f, "  \"hits_count\": %zu,\n", report->hits_count);
+  fprintf(f, "  \"count\": %zu,\n", report->count);
+  fprintf(f, "  \"timings\": [");
+
+  for (size_t i = 0; i < report->count; i++) {
+    fprintf(f, "%lu%s", report->timings[i],
+            (i == report->count - 1) ? "" : ", ");
+  }
+
+  fprintf(f, "]\n}\n");
+  fclose(f);
+
+  log_status("Exported analysis report to %s", filename);
+  return 0;
+}
+
+void cache_view_report(const char *filename) {
+  if (!filename)
+    log_error("filename cannot be NULL");
+
+  char cmd[2048];
+
+  /* Try to find the visualization tool in common locations */
+  const char *tool_paths[] = {"tools/cache_vis.html", "../tools/cache_vis.html",
+                              "../../tools/cache_vis.html"};
+
+  const char *found_tool = NULL;
+  for (size_t i = 0; i < sizeof(tool_paths) / sizeof(tool_paths[0]); i++) {
+    if (access(tool_paths[i], F_OK) == 0) {
+      found_tool = tool_paths[i];
+      break;
+    }
+  }
+
+  if (!found_tool) {
+    log_error("Could not find tools/cache_vis.html visualization tool.");
+  }
+
+  /* Get absolute path for the report */
+  char abs_report[512];
+  if (!realpath(filename, abs_report)) {
+    log_error("Failed to resolve absolute path for report: %s", filename);
+  }
+
+  /* Get absolute path for the tool */
+  char abs_tool[512];
+  if (!realpath(found_tool, abs_tool)) {
+    log_error("Failed to resolve absolute path for tool: %s", found_tool);
+  }
+
+  log_status("Opening visualization tool...");
+
+#if defined(__linux__)
+  snprintf(cmd, sizeof(cmd),
+           "xdg-open \"file://%s?report=%s\" > /dev/null 2>&1 &", abs_tool,
+           abs_report);
+#elif defined(__APPLE__)
+  snprintf(cmd, sizeof(cmd), "open \"file://%s?report=%s\" &", abs_tool,
+           abs_report);
+#else
+  /* Fallback or Windows */
+  snprintf(cmd, sizeof(cmd), "start \"\" \"file://%s?report=%s\"", abs_tool,
+           abs_report);
+#endif
+
+  if (system(cmd) != 0) {
+    log_error("Failed to execute open command.");
+  }
+}

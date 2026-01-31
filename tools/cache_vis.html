@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Axium Intelligence Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --ctp-base: #24273a;
+            --ctp-surface: rgba(46, 50, 69, 0.92);
+            --ctp-overlay: #5b6078;
+            --ctp-text: #cad3f5;
+            --ctp-subtext: #b8c0e0;
+            --ctp-blue: #8aadf4;
+            --ctp-green: #a6da95;
+            --ctp-red: #ed8796;
+            --ctp-mauve: #c6a0f6;
+            --ctp-lavender: #b7bdf8;
+            --radius: 2px;
+        }
+
+        [data-theme="light"] {
+            --ctp-base: #eff1f5;
+            --ctp-surface: rgba(220, 224, 232, 0.96);
+            --ctp-overlay: #bcc0cc;
+            --ctp-text: #4c4f69;
+            --ctp-subtext: #5c5f77;
+            --ctp-blue: #1e66f5;
+            --ctp-green: #40a02b;
+            --ctp-red: #d20f39;
+            --ctp-mauve: #8839ef;
+            --ctp-lavender: #7287fd;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background-color: var(--ctp-base);
+            color: var(--ctp-text);
+            margin: 0;
+            padding: 24px;
+            transition: background 0.4s ease;
+        }
+
+        .container {
+            max-width: 1750px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 32px;
+        }
+
+        header {
+            grid-column: span 2;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 24px;
+            border-bottom: 2px solid var(--ctp-overlay);
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .brand h1 { margin: 0; font-size: clamp(1.2rem, 5vw, 2rem); letter-spacing: 4px; text-transform: uppercase; color: var(--ctp-blue); }
+        .brand p { margin: 6px 0 0; color: var(--ctp-subtext); font-size: 0.9rem; }
+
+        .top-controls { display: flex; gap: 12px; flex-wrap: wrap; }
+
+        .btn {
+            border: 2px solid var(--ctp-overlay);
+            background: var(--ctp-surface);
+            color: var(--ctp-text);
+            padding: 10px 16px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-radius: var(--radius);
+            transition: all 0.3s;
+            text-transform: uppercase;
+            font-weight: 800;
+        }
+        .btn:hover { background: var(--ctp-blue); color: var(--ctp-base); border-color: var(--ctp-blue); }
+        .btn-sm { padding: 6px 12px; font-size: 0.7rem; border-width: 1px; }
+
+        .dashboard-main { display: flex; flex-direction: column; gap: 32px; min-width: 0; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-card {
+            background: var(--ctp-surface);
+            padding: 20px;
+            border-left: 5px solid var(--ctp-blue);
+            border-radius: var(--radius);
+        }
+        .stat-card h3 { margin: 0; font-size: 0.75rem; color: var(--ctp-lavender); letter-spacing: 2px; }
+        .stat-card p { margin: 10px 0 0; font-size: 1.8rem; font-weight: 800; overflow: hidden; text-overflow: ellipsis; }
+
+        .charts-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+        .chart-box {
+            background: var(--ctp-surface);
+            padding: 20px;
+            border: 1px solid var(--ctp-overlay);
+            border-radius: var(--radius);
+            height: 450px;
+            position: relative;
+            min-width: 0;
+        }
+        .chart-box.full { grid-column: span 2; }
+
+        .chart-actions {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 8px;
+            z-index: 10;
+        }
+
+        .help-sidebar {
+            background: var(--ctp-surface);
+            border: 1px solid var(--ctp-overlay);
+            border-radius: var(--radius);
+            padding: 24px;
+            height: fit-content;
+            position: sticky;
+            top: 24px;
+        }
+        .help-sidebar h2 { font-size: 1.1rem; margin-top: 0; color: var(--ctp-blue); border-bottom: 2px solid var(--ctp-overlay); padding-bottom: 12px; }
+        .help-item { margin-bottom: 20px; }
+        .help-item h4 { margin: 0 0 8px 0; font-size: 0.9rem; display: flex; align-items: center; gap: 10px; }
+        .help-item p { margin: 0; font-size: 0.8rem; color: var(--ctp-subtext); line-height: 1.5; }
+        .color-dot { width: 12px; height: 12px; border-radius: 2px; display: inline-block; flex-shrink: 0; }
+
+        .confidence-bar { height: 6px; background: var(--ctp-overlay); margin-top: 16px; width: 100%; }
+        .confidence-fill { height: 100%; background: var(--ctp-green); transition: width 1.5s ease; width: 0; }
+        input[type="file"] { display: none; }
+
+        /* Mobile & Tablet Adjustments */
+        @media (max-width: 1200px) {
+            .container { grid-template-columns: 1fr; }
+            header { grid-column: span 1; }
+            .help-sidebar { position: static; order: 2; }
+            .dashboard-main { order: 1; }
+        }
+
+        @media (max-width: 768px) {
+            body { padding: 16px; }
+            .charts-grid { grid-template-columns: 1fr; }
+            .chart-box.full { grid-column: span 1; }
+            .chart-box { height: 350px; padding: 15px; }
+            .stat-card p { font-size: 1.5rem; }
+            header { justify-content: center; text-align: center; }
+            .top-controls { justify-content: center; width: 100%; }
+            .chart-actions { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="brand"><h1>Axium Intelligence</h1><p>Cache Side-Channel Analysis System</p></div>
+            <div class="top-controls">
+                <button class="btn" onclick="toggleTheme()">Switch Theme</button>
+                <label class="btn">Import Dataset<input type="file" id="fileInput" accept=".json"></label>
+            </div>
+        </header>
+
+        <div class="dashboard-main" id="dashboard" style="display: none;">
+            <div class="stats-grid">
+                <div class="stat-card"><h3>THRESHOLD</h3><p id="stat-threshold">-</p></div>
+                <div class="stat-card" style="border-left-color: var(--ctp-red)"><h3>SIGNAL WINNER</h3><p id="stat-winner">-</p></div>
+                <div class="stat-card"><h3>GAP MAGNITUDE</h3><p id="stat-gap">-</p></div>
+                <div class="stat-card"><h3>CONFIDENCE</h3><p id="stat-conf">-</p><div class="confidence-bar"><div id="conf-fill" class="confidence-fill"></div></div></div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-box full">
+                    <div class="chart-actions"><button class="btn btn-sm" onclick="exportChart('mainChart')">Export PNG</button></div>
+                    <canvas id="mainChart"></canvas>
+                </div>
+                <div class="chart-box">
+                    <div class="chart-actions"><button class="btn btn-sm" onclick="exportChart('scatterChart')">Export PNG</button></div>
+                    <canvas id="scatterChart"></canvas>
+                </div>
+                <div class="chart-box">
+                    <div class="chart-actions"><button class="btn btn-sm" onclick="exportChart('distChart')">Export PNG</button></div>
+                    <canvas id="distChart"></canvas>
+                </div>
+                <div class="chart-box full">
+                    <div class="chart-actions"><button class="btn btn-sm" onclick="exportChart('cdfChart')">Export PNG</button></div>
+                    <canvas id="cdfChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <aside class="help-sidebar" id="sidebar" style="display: none;">
+            <h2>Analysis Guide</h2>
+            <div class="help-item">
+                <h4 id="help-winner-title"><span class="color-dot"></span> Winner (Target)</h4>
+                <p>The <strong>Signal Winner</strong> represents the sample with absolute minimum latency. This is the highest probability leak.</p>
+            </div>
+            <div class="help-item">
+                <h4 id="help-hit-title"><span class="color-dot"></span> Cache Hit</h4>
+                <p>Samples below the threshold line. These memory addresses were likely found in L1/L2 caches.</p>
+            </div>
+            <div class="help-item">
+                <h4 id="help-miss-title"><span class="color-dot"></span> Cache Miss</h4>
+                <p>Standard noise floor samples. Represents the latency of fetching data from system DRAM.</p>
+            </div>
+            <div class="help-item">
+                <h4 id="help-threshold-title"><span class="color-dot"></span> Signal Cutoff</h4>
+                <p>The <strong>Threshold</strong> line. It is dynamically adjusted to maximize the signal-to-noise ratio.</p>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        let charts = {};
+        function getColors() {
+            const root = getComputedStyle(document.documentElement);
+            return {
+                blue: root.getPropertyValue('--ctp-blue').trim(),
+                green: root.getPropertyValue('--ctp-green').trim(),
+                red: root.getPropertyValue('--ctp-red').trim(),
+                mauve: root.getPropertyValue('--ctp-mauve').trim(),
+                text: root.getPropertyValue('--ctp-text').trim(),
+                subtext: root.getPropertyValue('--ctp-subtext').trim(),
+                overlay: root.getPropertyValue('--ctp-overlay').trim(),
+            };
+        }
+
+        function exportChart(id) {
+            const canvas = document.getElementById(id);
+            const link = document.createElement('a');
+            link.download = `axium_${id}_${new Date().getTime()}.png`;
+            link.href = canvas.toDataURL('image/png', 1.0);
+            link.click();
+        }
+
+        function updateSidebarColors(c) {
+            document.querySelector('#help-winner-title .color-dot').style.backgroundColor = c.red;
+            document.querySelector('#help-hit-title .color-dot').style.backgroundColor = c.green;
+            document.querySelector('#help-miss-title .color-dot').style.backgroundColor = c.blue;
+            document.querySelector('#help-threshold-title .color-dot').style.backgroundColor = c.mauve;
+        }
+
+        function toggleTheme() {
+            document.documentElement.setAttribute('data-theme',
+                document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+            if (window.currentData) renderDashboard(window.currentData);
+        }
+
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                window.currentData = JSON.parse(e.target.result);
+                renderDashboard(window.currentData);
+                document.getElementById('dashboard').style.display = 'flex';
+                document.getElementById('sidebar').style.display = 'block';
+            };
+            reader.readAsText(file);
+        });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const reportUrl = params.get('report');
+            if (reportUrl) {
+                fetch(reportUrl)
+                    .then(response => response.json())
+                    .then(data => {
+                        window.currentData = data;
+                        renderDashboard(data);
+                        document.getElementById('dashboard').style.display = 'flex';
+                        document.getElementById('sidebar').style.display = 'block';
+                    })
+                    .catch(err => {
+                        console.error('Failed to auto-load report:', err);
+                        alert('Note: Browser security policies might block automatic loading of local files.\n\nIf the dashboard is empty, please use the "Import Dataset" button to manually select the report file:\n' + reportUrl);
+                    });
+            }
+        });
+
+        function renderDashboard(data) {
+            const c = getColors();
+            updateSidebarColors(c);
+
+            document.getElementById('stat-threshold').textContent = data.effective_threshold;
+            document.getElementById('stat-winner').textContent = data.winner_idx === -1 ? "NULL" : `#${data.winner_idx}`;
+            document.getElementById('stat-gap').textContent = data.gap;
+
+            const avg = data.timings.reduce((a,b)=>a+b,0)/data.count;
+            let score = Math.round(Math.min(100, (data.gap / (avg - data.winner_val + 1)) * 400));
+            document.getElementById('stat-conf').textContent = score + "%";
+            document.getElementById('conf-fill').style.width = score + "%";
+
+            Object.values(charts).forEach(chart => chart.destroy());
+
+            const baseOptions = {
+                responsive: true, maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { display: true, labels: { color: c.text, font: { family: 'JetBrains Mono', size: 11, weight: '700' } } },
+                    tooltip: { enabled: true, backgroundColor: 'rgba(0,0,0,0.85)', titleFont: { family: 'JetBrains Mono' }, bodyFont: { family: 'JetBrains Mono' } }
+                },
+                scales: {
+                    y: {
+                        title: { display: true, text: 'LATENCY (CYCLES)', color: c.subtext, font: { family: 'JetBrains Mono', size: 12, weight: '800' } },
+                        grid: { color: c.overlay + '33' }, ticks: { color: c.subtext, font: { family: 'JetBrains Mono' } }
+                    },
+                    x: {
+                        title: { display: true, text: 'SAMPLE INDEX', color: c.subtext, font: { family: 'JetBrains Mono', size: 12, weight: '800' } },
+                        grid: { color: c.overlay + '33' }, ticks: { color: c.subtext, font: { family: 'JetBrains Mono' } }
+                    }
+                }
+            };
+
+            // 1. Main Timeline
+            charts.main = new Chart(document.getElementById('mainChart'), {
+                type: 'line',
+                data: {
+                    labels: data.timings.map((_, i) => i),
+                    datasets: [{
+                        label: 'LATENCY STREAM', data: data.timings,
+                        borderColor: c.blue, backgroundColor: c.blue + '33',
+                        fill: true, tension: 0.1, borderWidth: 2,
+                        pointRadius: 3,
+                        pointBackgroundColor: data.timings.map((t, i) =>
+                            i === data.winner_idx ? c.red : (t <= data.effective_threshold ? c.green + '88' : c.blue + '88'))
+                    }, {
+                        label: 'SIGNAL THRESHOLD', data: new Array(data.count).fill(data.effective_threshold),
+                        borderColor: c.mauve, borderDash: [6, 4], borderWidth: 2, pointRadius: 0, fill: false
+                    }, {
+                        label: 'WINNER CANDIDATE', data: [], backgroundColor: c.red, pointRadius: 5
+                    }]
+                },
+                options: { ...baseOptions, plugins: { ...baseOptions.plugins, title: { display: true, text: 'TIMING FLOW SEQUENCE', color: c.blue, font: { family: 'JetBrains Mono', size: 20, weight: '800' } } } }
+            });
+
+            // 2. Scatter
+            const hitPoints = data.timings.map((t, i) => t <= data.effective_threshold ? { x: i, y: t } : null).filter(p => p);
+            const missPoints = data.timings.map((t, i) => t > data.effective_threshold ? { x: i, y: t } : null).filter(p => p);
+
+            charts.scatter = new Chart(document.getElementById('scatterChart'), {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'CACHE MISSES',
+                        data: missPoints,
+                        backgroundColor: c.blue + '88',
+                        pointRadius: 5
+                    }, {
+                        label: 'CACHE HITS',
+                        data: hitPoints,
+                        backgroundColor: c.green + '88',
+                        pointRadius: 6
+                    }]
+                },
+                options: {
+                    ...baseOptions,
+                    plugins: { ...baseOptions.plugins, title: { display: true, text: 'SCATTER DENSITY MAP', color: c.blue, font: { family: 'JetBrains Mono', size: 20, weight: '800' } } },
+                    animation: { y: { type: 'number', duration: 1200, from: -100, delay: (ctx) => ctx.dataIndex * 4 } }
+                }
+            });
+
+            // 3. Distribution
+            charts.dist = new Chart(document.getElementById('distChart'), {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(data.timings.reduce((acc, t) => {
+                        const b = Math.floor(t/10)*10; acc[b] = (acc[b]||0)+1; return acc;
+                    }, {})).sort((a,b)=>a-b),
+                    datasets: [{
+                        label: 'LATENCY FREQUENCY',
+                        data: Object.values(data.timings.reduce((acc, t) => {
+                            const b = Math.floor(t/10)*10; acc[b] = (acc[b]||0)+1; return acc;
+                        }, {})),
+                        backgroundColor: c.blue + '99', borderColor: c.blue, borderWidth: 1
+                    }]
+                },
+                options: {
+                    ...baseOptions,
+                    scales: {
+                        ...baseOptions.scales,
+                        x: { ...baseOptions.scales.x, title: { display: true, text: 'LATENCY BINS', color: c.subtext, font: { family: 'JetBrains Mono', size: 12, weight: '800' } } }
+                    },
+                    plugins: { ...baseOptions.plugins, title: { display: true, text: 'POPULATION HISTOGRAM', color: c.blue, font: { family: 'JetBrains Mono', size: 20, weight: '800' } } },
+                    animation: { delay: (ctx) => ctx.dataIndex * 50 }
+                }
+            });
+
+            // 4. CDF
+            const sortedTimings = [...data.timings].sort((a,b)=>a-b);
+            charts.cdf = new Chart(document.getElementById('cdfChart'), {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: 'PROBABILITY CDF', data: sortedTimings.map((v, i) => ({ x: v, y: (i + 1) / data.count })),
+                        borderColor: c.mauve, backgroundColor: c.mauve + '25', fill: true, pointRadius: 0, borderWidth: 3, stepped: true
+                    }]
+                },
+                options: {
+                    ...baseOptions,
+                    scales: {
+                        ...baseOptions.scales,
+                        x: { ...baseOptions.scales.x, type: 'linear', title: { display: true, text: 'LATENCY (CYCLES)', color: c.subtext, font: { family: 'JetBrains Mono', size: 12, weight: '800' } } },
+                        y: { ...baseOptions.scales.y, max: 1, title: { display: true, text: 'PROBABILITY (0-1)', color: c.subtext, font: { family: 'JetBrains Mono', size: 12, weight: '800' } } }
+                    },
+                    plugins: { ...baseOptions.plugins, title: { display: true, text: 'CUMULATIVE DENSITY FUNCTION', color: c.blue, font: { family: 'JetBrains Mono', size: 20, weight: '800' } } },
+                    animation: { x: { duration: 2500, from: 0 } }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

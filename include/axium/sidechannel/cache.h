@@ -220,13 +220,6 @@ typedef struct {
 void cache_analyze(cache_report_t *report, uint64_t *timings, size_t count,
                    uint64_t threshold);
 
-/**
- * @brief Prints a visual summary of the side-channel results.
- *
- * @param report Pointer to the analysis results to display.
- */
-void cache_report(const cache_report_t *report);
-
 #undef _CACHE_INLINE
 
 #endif /* AXIUM_CACHE_H */
