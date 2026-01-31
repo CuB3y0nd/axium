@@ -4,12 +4,6 @@
 >
 > *panix* captures the moment of failure. *axium* is concerned with what exists before that moment — the unnamed assumptions, the implicit structures, and the minimal conditions under which an exploit becomes possible.
 
-## Philosophy
-
-Axium is not a framework, and it is not a collection of tricks. It is a set of low-level primitives refined through repetition: touching memory, interfering with object lifetimes, and shifting the boundaries between data flow and control flow.
-
-There is no "automatic exploitation" here. Only a dialogue between you and the kernel about causality, assumptions, and cost.
-
 ## Usage
 
 Axium makes it easy to iterate on exploits without fighting the build system.
@@ -65,6 +59,13 @@ make test
 make clean
 ```
 
+### Develop
+
+```bash
+bear -- make
+```
+
 ## Sponsors
 
 Special thanks to **Vlex** for donating the domain [hyphony.com](https://hyphony.com) to this project.
+
