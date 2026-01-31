@@ -16,11 +16,13 @@
  * @brief Shuffles an index using a Linear Congruential Mapping to defeat
  * hardware prefetchers.
  *
- * Formula: (i * 167 + 13) & mask.
+ * Formula: `(i * 167 + 13) & mask`.
  *
  * @param i The original sequential index.
- * @param mask The bitwise mask. MUST be (ARRAY_SIZE - 1), where ARRAY_SIZE is a
- * power of 2.
+ * @param mask The bitwise mask.
+ *
+ * > [!IMPORTANT]
+ * > MUST be `(ARRAY_SIZE - 1)`, where `ARRAY_SIZE` is a power of 2.
  */
 #define MIXED_IDX(i, mask) (((i) * 167 + 13) & (mask))
 
