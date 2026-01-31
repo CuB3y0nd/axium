@@ -129,7 +129,7 @@ _CACHE_INLINE uint64_t probe_end(void) {
 /**
  * @brief Lightweight version of probe_start using lfence.
  *
- * Faster than probe_start but only serializes memory instructions.
+ * Probably faster than probe_start but only serializes memory instructions.
  *
  * @return Starting 64-bit cycle count.
  */
@@ -141,7 +141,7 @@ _CACHE_INLINE uint64_t probe_start_lfence(void) {
 /**
  * @brief Lightweight version of probe_end using lfence.
  *
- * Faster than probe_end but only serializes memory instructions.
+ * Probably faster than probe_end but only serializes memory instructions.
  *
  * @return Ending 64-bit cycle count.
  */
