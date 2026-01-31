@@ -65,6 +65,13 @@ make clean
 bear -- make
 ```
 
+## Screenshots
+
+<center>
+  <img src="https://github.com/CuB3y0nd/picx-images-hosting/raw/master/.4qru0rmgvk.avif" alt="" />
+  <img src="https://github.com/CuB3y0nd/picx-images-hosting/raw/master/.7snq1zp03d.avif" alt="" />
+</center>
+
 ## Sponsors
 
 Special thanks to **Vlex** for donating the domain [hyphony.com](https://hyphony.com) to this project.
