@@ -90,7 +90,7 @@ src/tests/%.o: src/tests/%.c
 
 # Cleanup
 clean:
-	rm -f $(TARGET) $(OBJS) $(TEST_OBJS) $(TEST_BINS) *_bundled.c
+	rm -f $(TARGET) $(OBJS) $(TEST_OBJS) $(TEST_BINS) *_bundled.c *.json
 	@# Clean up all object files and executables that might have been created
 	find . -maxdepth 1 -type f -name "*.o" -delete
 	find . -maxdepth 1 -type f -executable -not -name "*.sh" -not -name "Makefile" -delete
