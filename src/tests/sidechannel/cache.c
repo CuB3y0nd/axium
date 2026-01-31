@@ -3,6 +3,13 @@
 
 #define ARRAY_SIZE 256
 
+void test_fences(void) {
+  log_info("Testing memory fences (mfence, lfence, sfence)...");
+  mfence();
+  lfence();
+  sfence();
+}
+
 void test_mixed_idx(void) {
   uint8_t mask = ARRAY_SIZE - 1;
 
@@ -18,14 +25,20 @@ void test_timing_primitives(void) {
 
   log_info("Testing timing primitives and serializing overhead...");
 
+  t1 = rdtsc();
+  t2 = rdtscp();
+  log_debug("Raw rdtsc -> rdtscp delta: %lu", t2 - t1);
+
   t1 = probe_start();
   t2 = probe_end();
   log_info("Instrumentation overhead (probe_start -> probe_end): %lu cycles",
            t2 - t1);
 
-  t1 = rdtsc();
-  t2 = rdtscp();
-  log_debug("Raw rdtsc -> rdtscp delta: %lu", t2 - t1);
+  t1 = probe_start_lfence();
+  t2 = probe_end_lfence();
+  log_info("Instrumentation overhead (probe_start_lfence -> probe_end_lfence): "
+           "%lu cycles",
+           t2 - t1);
 }
 
 void test_cache_logic(void) {
@@ -61,6 +74,7 @@ void test_cache_logic(void) {
 
 int main(void) {
   set_log_level(DEBUG);
+  test_fences();
   test_mixed_idx();
   test_timing_primitives();
   test_cache_logic();
