@@ -34,6 +34,7 @@ extern "C" {
 #include <axium/log.h>
 #include <axium/shellcraft/common.h>
 #include <axium/shellcraft/snippets.h>
+#include <axium/sidechannel/cache.h>
 #include <axium/timeout.h>
 #include <axium/tubes/process.h>
 #include <axium/tubes/tube.h>
