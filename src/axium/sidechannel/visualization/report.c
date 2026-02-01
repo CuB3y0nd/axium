@@ -104,6 +104,21 @@ void cache_watch_reporter(size_t index, uint64_t cycles, void *user_data) {
            index, cycles, report->hit_counts[index], report->total_hits);
 }
 
+void cache_watch_report_init(cache_watch_report_t *report, uint64_t *hit_counts,
+                             size_t count, uint64_t threshold) {
+  if (!report || !hit_counts)
+    return;
+
+  report->hit_counts = hit_counts;
+  report->count = count;
+  report->threshold = threshold;
+  report->total_hits = 0;
+
+  for (size_t i = 0; i < count; i++) {
+    report->hit_counts[i] = 0;
+  }
+}
+
 void cache_analyze(cache_report_t *report, uint64_t *timings, size_t count,
                    uint64_t threshold) {
   if (!report || !timings || count == 0)

@@ -35,6 +35,18 @@ typedef struct {
 } cache_watch_report_t;
 
 /**
+ * @brief Initializes a cache watch report structure.
+ *
+ * @param report Pointer to the report structure to initialize.
+ * @param hit_counts Array to store hit counts (must be at least 'count'
+ * elements).
+ * @param count Number of monitored lines.
+ * @param threshold Cycle threshold used for detection.
+ */
+void cache_watch_report_init(cache_watch_report_t *report, uint64_t *hit_counts,
+                             size_t count, uint64_t threshold);
+
+/**
  * @brief Prints a visual summary of the side-channel results.
  *
  * @param report Pointer to the analysis results to display.
