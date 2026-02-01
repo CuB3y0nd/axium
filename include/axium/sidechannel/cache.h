@@ -8,8 +8,7 @@
 #ifndef AXIUM_CACHE_H
 #define AXIUM_CACHE_H
 
-#include <stddef.h>
-#include <stdint.h>
+#include <axium/sidechannel/visualization/report.h>
 
 /**
  * @brief Shuffles an index using a Linear Congruential Mapping to defeat
@@ -194,31 +193,6 @@ _CACHE_INLINE void cache_flush_range(const void *p, size_t size) {
  * @return Recommended cycle threshold.
  */
 uint64_t cache_calibrate_threshold(const void *target);
-
-/**
- * @brief Results and analysis structure.
- */
-typedef struct {
-  uint64_t threshold;           /**< Original calibrated threshold. */
-  uint64_t effective_threshold; /**< Refined threshold after analysis. */
-  uint64_t *timings;            /**< Raw timing results. */
-  size_t count;                 /**< Number of elements. */
-  int winner_idx;               /**< Index of the global minimum. */
-  uint64_t winner_val;          /**< Timing of the winner. */
-  uint64_t gap;                 /**< Timing gap between winner and runner-up. */
-  size_t hits_count;            /**< Refined count of valid hits. */
-} cache_report_t;
-
-/**
- * @brief Analyzes timing data using Gap-based noise reduction.
- *
- * @param report Pointer to the report structure to populate.
- * @param timings Array of raw timing measurements.
- * @param count Number of elements in the timings array.
- * @param threshold Initial cycle threshold for hit detection.
- */
-void cache_analyze(cache_report_t *report, uint64_t *timings, size_t count,
-                   uint64_t threshold);
 
 #undef _CACHE_INLINE
 

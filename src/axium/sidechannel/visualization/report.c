@@ -78,6 +78,78 @@ void cache_report(const cache_report_t *report) {
   }
 }
 
+void cache_watch_reporter(size_t index, uint64_t cycles, void *user_data) {
+  cache_watch_report_t *report = (cache_watch_report_t *)user_data;
+  uint64_t idx_hits = 0;
+  uint64_t total = 0;
+
+  if (__builtin_expect(!!report, 1) && index < report->count) {
+    report->hit_counts[index]++;
+    report->total_hits++;
+    idx_hits = report->hit_counts[index];
+    total = report->total_hits;
+  }
+
+  log_info("Hit Index %-3zu | Latency: %-3lu | Index Hits: %-5lu | Total: %lu",
+           index, cycles, idx_hits, total);
+}
+
+void cache_analyze(cache_report_t *report, uint64_t *timings, size_t count,
+                   uint64_t threshold) {
+  if (!report || !timings || count == 0)
+    return;
+
+  report->timings = timings;
+  report->count = count;
+  report->threshold = threshold;
+  report->effective_threshold = threshold;
+  report->winner_idx = -1;
+  report->winner_val = (uint64_t)-1;
+  report->gap = 0;
+  report->hits_count = 0;
+
+  uint64_t runner_up_val = (uint64_t)-1;
+
+  /* Global identification of winner and runner-up */
+  for (size_t i = 0; i < count; i++) {
+    uint64_t t = timings[i];
+    if (t < report->winner_val) {
+      runner_up_val = report->winner_val;
+      report->winner_val = t;
+      report->winner_idx = (int)i;
+    } else if (t < runner_up_val) {
+      runner_up_val = t;
+    }
+  }
+
+  if (report->winner_idx != -1 && runner_up_val != (uint64_t)-1) {
+    report->gap = runner_up_val - report->winner_val;
+  }
+
+  /* Refine threshold using Gap analysis if a clear jump is found */
+  if (report->gap >= 50) {
+    /* Use the midpoint between top two candidates as the refined cutoff */
+    report->effective_threshold = report->winner_val + (report->gap / 2);
+  }
+
+  /* Filter results based on the effective threshold */
+  for (size_t i = 0; i < count; i++) {
+    if (timings[i] <= report->effective_threshold) {
+      report->hits_count++;
+    }
+  }
+
+  /* Ensure adaptive logic flags the winner if the gap is decisive */
+  if (report->hits_count == 0 && report->gap >= 50 &&
+      report->winner_idx != -1) {
+    report->hits_count = 1;
+  } else if (report->winner_val > report->effective_threshold) {
+    /* No true winner found if the best candidate is still too slow */
+    report->winner_idx = -1;
+    report->hits_count = 0;
+  }
+}
+
 int cache_export_report(const cache_report_t *report, const char *filename) {
   if (!report || !report->timings || !filename)
     return -1;
@@ -106,6 +178,29 @@ int cache_export_report(const cache_report_t *report, const char *filename) {
   fclose(f);
 
   log_status("Exported analysis report to %s", filename);
+  return 0;
+}
+
+int cache_export_watch_report(const cache_watch_report_t *report,
+                              const char *filename) {
+  FILE *f = fopen(filename, "w");
+  if (!f)
+    return -1;
+
+  fprintf(f, "{\n");
+  fprintf(f, "  \"type\": \"watch\",\n");
+  fprintf(f, "  \"count\": %zu,\n", report->count);
+  fprintf(f, "  \"threshold\": %lu,\n", report->threshold);
+  fprintf(f, "  \"total_hits\": %lu,\n", report->total_hits);
+  fprintf(f, "  \"hit_counts\": [");
+  for (size_t i = 0; i < report->count; i++) {
+    fprintf(f, "%lu%s", report->hit_counts[i],
+            (i == report->count - 1) ? "" : ", ");
+  }
+  fprintf(f, "]\n");
+  fprintf(f, "}\n");
+
+  fclose(f);
   return 0;
 }
 

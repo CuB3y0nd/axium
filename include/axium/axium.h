@@ -25,6 +25,7 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 
 #ifdef __cplusplus
@@ -37,6 +38,7 @@ extern "C" {
 #include <axium/shellcraft/snippets.h>
 #include <axium/sidechannel/cache.h>
 #include <axium/sidechannel/cpu.h>
+#include <axium/sidechannel/monitor.h>
 #include <axium/sidechannel/visualization/report.h>
 #include <axium/timeout.h>
 #include <axium/tubes/process.h>
