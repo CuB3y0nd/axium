@@ -1,5 +1,4 @@
 #include <axium/axium.h>
-#include <time.h>
 
 void simulate_scenario(const char *name, size_t count, int target_idx,
                        int noise_level, int scenario_type) {
@@ -37,6 +36,43 @@ void simulate_scenario(const char *name, size_t count, int target_idx,
   free(timings);
 }
 
+void simulate_watch_scenario(const char *name, size_t count, int target_idx) {
+  uint64_t *hits = calloc(count, sizeof(uint64_t));
+  cache_watch_report_t report;
+
+  cache_watch_report_init(&report, hits, count, 150);
+
+  // Simulate hits with a more complex distribution
+  for (int i = 0; i < 1000; i++) {
+    int idx;
+    int roll = rand() % 100;
+
+    if (roll < 35) {
+      // 35% Primary target
+      idx = target_idx;
+    } else if (roll < 55) {
+      // 20% Spatial locality / Prefetcher (neighboring lines)
+      int offset = (rand() % 3) - 1; // -1, 0, 1
+      idx = (target_idx + offset + (int)count) % (int)count;
+    } else if (roll < 70) {
+      // 15% Distractor (another frequent access point)
+      idx = (target_idx + (int)count / 2) % (int)count;
+    } else {
+      // 30% Uniform background noise
+      idx = rand() % count;
+    }
+
+    cache_watch_reporter(idx, 40 + (rand() % 40), &report);
+  }
+
+  char filename[64];
+  snprintf(filename, sizeof(filename), "report_%s.json", name);
+  cache_export_watch_report(&report, filename);
+
+  log_success("Generated watch scenario to %s", filename);
+  free(hits);
+}
+
 int main() {
   srand(time(NULL));
   log_info("Generating advanced simulation datasets...");
@@ -44,6 +80,8 @@ int main() {
   simulate_scenario("ideal", 128, 42, 40, 0);
   simulate_scenario("noisy", 256, 100, 150, 1);
   simulate_scenario("prefetcher", 256, 180, 50, 2);
+
+  simulate_watch_scenario("watch_monitor", 64, 32);
 
   log_status(
       "All simulations complete. Open tools/cache_vis.html to view reports.");
