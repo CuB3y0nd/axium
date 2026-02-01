@@ -63,7 +63,7 @@ int cache_audit(const void *target, uint64_t threshold)
  */
 void cache_watch(const void *base, const cache_watch_config *config,
                  cache_hit_cb callback, void *user_data)
-    __attribute__((hot, flatten, nonnull(1, 2, 3)));
+    __attribute__((hot, flatten, nonnull(1, 2)));
 
 /**
  * @brief Installs a default signal handler for SIGINT (Ctrl+C).

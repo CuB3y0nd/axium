@@ -64,6 +64,10 @@ void cache_watch(const void *base, const cache_watch_config *config,
   const uint64_t threshold = config->threshold;
   const int wait_cycles = config->wait_cycles;
 
+  if (!callback) {
+    callback = cache_watch_reporter;
+  }
+
   while (1) {
     log_info_once("Watching... (Press Ctrl+C to exit)");
 
