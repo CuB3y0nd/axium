@@ -299,8 +299,28 @@
             document.getElementById('stat-winner').textContent = data.winner_idx === -1 ? "NULL" : `#${data.winner_idx}`;
             document.getElementById('stat-gap').textContent = data.gap;
 
-            const avg = data.timings.reduce((a,b)=>a+b,0)/data.count;
-            let score = Math.round(Math.min(100, (data.gap / (avg - data.winner_val + 1)) * 400));
+            const hits = data.timings.filter(t => t <= data.effective_threshold).length;
+            const threshold = data.effective_threshold;
+
+            // Confidence: Gap relative to threshold, penalized by multiple hits
+            let score = 0;
+            if (data.winner_idx !== -1 && threshold > 0) {
+                // Base score from gap magnitude
+                const gapRatio = data.gap / threshold;
+                score = Math.min(100, gapRatio * 150);
+
+                // Penalize if there are multiple hits (signal should be unique)
+                if (hits > 1) {
+                    score = score * (1.0 / Math.log2(hits + 1));
+                }
+
+                // Ensure winner is actually below threshold
+                if (data.winner_val > threshold) {
+                    score = score * 0.1;
+                }
+            }
+
+            score = Math.round(Math.max(0, Math.min(100, score)));
             document.getElementById('stat-conf').textContent = score + "%";
             document.getElementById('conf-fill').style.width = score + "%";
 
