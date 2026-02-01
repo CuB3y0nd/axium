@@ -174,18 +174,19 @@ int cache_export_report(const cache_report_t *report, const char *filename) {
             (i == report->count - 1) ? "" : ", ");
   }
 
+  log_success("Report saved to %s", filename);
+
   fprintf(f, "]\n}\n");
   fclose(f);
-
-  log_status("Exported analysis report to %s", filename);
   return 0;
 }
 
 int cache_export_watch_report(const cache_watch_report_t *report,
                               const char *filename) {
   FILE *f = fopen(filename, "w");
-  if (!f)
-    return -1;
+  if (!f) {
+    log_error("Failed to open file for export: %s", filename);
+  }
 
   fprintf(f, "{\n");
   fprintf(f, "  \"type\": \"watch\",\n");
@@ -199,6 +200,8 @@ int cache_export_watch_report(const cache_watch_report_t *report,
   }
   fprintf(f, "]\n");
   fprintf(f, "}\n");
+
+  log_success("Report saved to %s", filename);
 
   fclose(f);
   return 0;

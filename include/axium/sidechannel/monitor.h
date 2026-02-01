@@ -53,4 +53,17 @@ void cache_watch(const void *base, const cache_watch_config *config,
                  cache_hit_cb callback, void *user_data)
     __attribute__((hot, flatten, nonnull(1, 2, 3)));
 
+/**
+ * @brief Installs a default signal handler for SIGINT (Ctrl+C).
+ *
+ * When interrupted, the handler will automatically export the report
+ * to the specified file.
+ *
+ * @param report The report structure to save.
+ * @param filename Output filename for the JSON report.
+ */
+void cache_watch_install_handler(const cache_watch_report_t *report,
+                                 const char *filename)
+    __attribute__((nonnull(1, 2)));
+
 #endif /* AXIUM_SIDECHANNEL_MONITOR_H */

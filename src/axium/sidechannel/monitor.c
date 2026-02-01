@@ -1,5 +1,35 @@
 #include <axium/log.h>
 #include <axium/sidechannel/monitor.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+static struct {
+  const cache_watch_report_t *report;
+  char filename[512];
+} _watch_sig_ctx;
+
+static void _watch_internal_sigint_handler(int sig) {
+  (void)sig;
+  puts(""); /* New line after potentially many hit logs */
+  log_info("Interrupted. Exporting watch report...");
+
+  if (cache_export_watch_report(_watch_sig_ctx.report,
+                                _watch_sig_ctx.filename) == 0) {
+    exit(0);
+  } else {
+    log_error("Failed to save report on exit.");
+  }
+}
+
+void cache_watch_install_handler(const cache_watch_report_t *report,
+                                 const char *filename) {
+  _watch_sig_ctx.report = report;
+  strncpy(_watch_sig_ctx.filename, filename,
+          sizeof(_watch_sig_ctx.filename) - 1);
+  signal(SIGINT, _watch_internal_sigint_handler);
+}
 
 int cache_audit(const void *target, uint64_t threshold) {
   clflush(target);
@@ -24,6 +54,8 @@ void cache_watch(const void *base, const cache_watch_config *config,
   const int wait_cycles = config->wait_cycles;
 
   while (1) {
+    log_info_once("Watching... (Press Ctrl+C to exit)");
+
     for (size_t i = 0; i < count; i++) {
       clflush(ptr + (i * stride));
     }
