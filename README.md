@@ -45,7 +45,19 @@ make SRC=my_exp.c bundle
 
 *Note: Building any script (for example, `make my_exp`) automatically generates its bundled version.*
 
-### Run test suites
+### Cleanup
+
+```bash
+make clean
+```
+
+### For Developers
+
+```bash
+bear -- make
+```
+
+#### Run test suites
 
 Every file in `src/tests/**/*.c` is treated as an independent binary.
 
@@ -53,22 +65,18 @@ Every file in `src/tests/**/*.c` is treated as an independent binary.
 make test
 ```
 
-### Cleanup
-
-```bash
-make clean
-```
-
-### Develop
-
-```bash
-bear -- make
-```
-
 ## Screenshots
 
+Dashboard for attack single process self:
+
 <center>
-  <img src="https://github.com/CuB3y0nd/picx-images-hosting/raw/master/.8hgzm0pomi.avif" alt="" />
+  <img src="https://github.com/CuB3y0nd/picx-images-hosting/raw/master/.9kgoy7vdgk.avif" alt="" />
+</center>
+
+Dashboard for attack different process:
+
+<center>
+  <img src="https://github.com/CuB3y0nd/picx-images-hosting/raw/master/.77e2h0hk9y.avif" alt="" />
 </center>
 
 ## Sponsors
