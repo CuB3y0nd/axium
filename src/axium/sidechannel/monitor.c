@@ -31,6 +31,17 @@ void cache_watch_install_handler(const cache_watch_report_t *report,
   signal(SIGINT, _watch_internal_sigint_handler);
 }
 
+cache_watch_config cache_watch_config_init(uint64_t threshold, size_t count,
+                                           size_t stride, int wait_cycles) {
+  cache_watch_config config = {
+      .threshold = threshold,
+      .count = count,
+      .stride = stride,
+      .wait_cycles = wait_cycles,
+  };
+  return config;
+}
+
 int cache_audit(const void *target, uint64_t threshold) {
   clflush(target);
   mfence();

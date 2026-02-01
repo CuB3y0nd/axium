@@ -30,6 +30,18 @@ typedef struct {
 } cache_watch_config;
 
 /**
+ * @brief Initializes a cache watch configuration with the specified parameters.
+ *
+ * @param threshold Cycle threshold for hit detection.
+ * @param count Number of lines to monitor.
+ * @param stride Distance between lines.
+ * @param wait_cycles Delay between Flush and Reload.
+ * @return Initialized cache_watch_config.
+ */
+cache_watch_config cache_watch_config_init(uint64_t threshold, size_t count,
+                                           size_t stride, int wait_cycles);
+
+/**
  * @brief Audits the environment to see if cache flushing is effective.
  *
  * @param target Pointer to a test memory location.

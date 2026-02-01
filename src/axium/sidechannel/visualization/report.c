@@ -79,19 +79,29 @@ void cache_report(const cache_report_t *report) {
 }
 
 void cache_watch_reporter(size_t index, uint64_t cycles, void *user_data) {
-  cache_watch_report_t *report = (cache_watch_report_t *)user_data;
-  uint64_t idx_hits = 0;
-  uint64_t total = 0;
-
-  if (__builtin_expect(!!report, 1) && index < report->count) {
-    report->hit_counts[index]++;
-    report->total_hits++;
-    idx_hits = report->hit_counts[index];
-    total = report->total_hits;
+  if (!user_data) {
+    log_info("Hit Index %-3zu | Latency: %lu", index, cycles);
+    return;
   }
 
+  cache_watch_report_t *report = (cache_watch_report_t *)user_data;
+
+  if (__builtin_expect(!report->hit_counts, 0)) {
+    log_info("Hit Index %-3zu | Latency: %-3lu", index, cycles);
+    return;
+  }
+
+  if (__builtin_expect(index >= report->count, 0)) {
+    log_warning("Hit Index %zu out of bounds (count: %zu)", index,
+                report->count);
+    return;
+  }
+
+  report->hit_counts[index]++;
+  report->total_hits++;
+
   log_info("Hit Index %-3zu | Latency: %-3lu | Index Hits: %-5lu | Total: %lu",
-           index, cycles, idx_hits, total);
+           index, cycles, report->hit_counts[index], report->total_hits);
 }
 
 void cache_analyze(cache_report_t *report, uint64_t *timings, size_t count,
@@ -183,6 +193,9 @@ int cache_export_report(const cache_report_t *report, const char *filename) {
 
 int cache_export_watch_report(const cache_watch_report_t *report,
                               const char *filename) {
+  if (!report || !filename)
+    return -1;
+
   FILE *f = fopen(filename, "w");
   if (!f) {
     log_error("Failed to open file for export: %s", filename);
