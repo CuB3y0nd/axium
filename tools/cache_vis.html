@@ -176,10 +176,13 @@
 
         <div class="dashboard-main" id="dashboard" style="display: none;">
             <div class="stats-grid">
-                <div class="stat-card"><h3>THRESHOLD</h3><p id="stat-threshold">-</p></div>
-                <div class="stat-card" style="border-left-color: var(--ctp-red)"><h3>SIGNAL WINNER</h3><p id="stat-winner">-</p></div>
-                <div class="stat-card"><h3>GAP MAGNITUDE</h3><p id="stat-gap">-</p></div>
+                <div class="stat-card"><h3>THRESHOLD / BASELINE</h3><p id="stat-threshold">-</p></div>
+                <div class="stat-card" style="border-left-color: var(--ctp-red)"><h3>PRIMARY TARGET</h3><p id="stat-winner">-</p></div>
+                <div class="stat-card"><h3>SIGNAL INTENSITY</h3><p id="stat-gap">-</p></div>
                 <div class="stat-card"><h3>CONFIDENCE</h3><p id="stat-conf">-</p><div class="confidence-bar"><div id="conf-fill" class="confidence-fill"></div></div></div>
+                <!-- Additional Stats Row -->
+                <div class="stat-card" style="border-left-color: var(--ctp-mauve)"><h3>NOISE FLOOR (AVG)</h3><p id="stat-extra-1">-</p></div>
+                <div class="stat-card" style="border-left-color: var(--ctp-lavender)"><h3>SIGNAL ENTROPY</h3><p id="stat-extra-2">-</p></div>
             </div>
 
             <div class="charts-grid">
@@ -232,10 +235,66 @@
                 green: root.getPropertyValue('--ctp-green').trim(),
                 red: root.getPropertyValue('--ctp-red').trim(),
                 mauve: root.getPropertyValue('--ctp-mauve').trim(),
+                lavender: root.getPropertyValue('--ctp-lavender').trim(),
                 text: root.getPropertyValue('--ctp-text').trim(),
                 subtext: root.getPropertyValue('--ctp-subtext').trim(),
                 overlay: root.getPropertyValue('--ctp-overlay').trim(),
             };
+        }
+
+        function calculateEntropy(counts) {
+            const total = counts.reduce((a, b) => a + b, 0);
+            if (total === 0) return 0;
+            return -counts.reduce((acc, c) => {
+                if (c === 0) return acc;
+                const p = c / total;
+                return acc + p * Math.log2(p);
+            }, 0);
+        }
+
+        function updateSidebar(isWatch, c) {
+            const sidebar = document.getElementById('sidebar');
+            if (isWatch) {
+                sidebar.innerHTML = `
+                    <h2>Monitor Intelligence</h2>
+                    <div class="help-item">
+                        <h4><span class="color-dot" style="background:${c.green}"></span> Confidence</h4>
+                        <p><strong>Formula:</strong> (Peak-to-Average Ratio) × (1 - Entropy Score).<br>Evaluates signal authenticity. A high score indicates a single dominant hotspot with a clean background noise floor.</p>
+                    </div>
+                    <div class="help-item">
+                        <h4><span class="color-dot" style="background:${c.lavender}"></span> Signal Entropy</h4>
+                        <p>Measures the <strong>focus</strong> of the signal. Lower bit values mean cache hits are highly concentrated in specific memory lines, a hallmark of side-channel leaks.</p>
+                    </div>
+                    <div class="help-item">
+                        <h4><span class="color-dot" style="background:${c.blue}"></span> Noise Floor</h4>
+                        <p>The average hit intensity across the range. Represents the baseline system activity used for signal-to-noise ratio calculations.</p>
+                    </div>
+                    <div class="help-item">
+                        <h4><span class="color-dot" style="background:${c.red}"></span> Hottest Index</h4>
+                        <p>The memory line with the highest hit count. In attack scenarios, this usually corresponds to a cryptographic key index or state transition address.</p>
+                    </div>
+                `;
+            } else {
+                sidebar.innerHTML = `
+                    <h2>Analysis Guide</h2>
+                    <div class="help-item">
+                        <h4><span class="color-dot" style="background:${c.green}"></span> Confidence</h4>
+                        <p><strong>Formula:</strong> (Timing Gap / Threshold) with multi-hit penalty.<br>Evaluates signal uniqueness. If a clear timing gap exists with a single winner, confidence is maximized.</p>
+                    </div>
+                    <div class="help-item">
+                        <h4><span class="color-dot" style="background:${c.red}"></span> Signal Winner</h4>
+                        <p>The index with the minimum latency across the sample set. Represents the highest probability of a cache hit for that branch or address.</p>
+                    </div>
+                    <div class="help-item">
+                        <h4><span class="color-dot" style="background:${c.mauve}"></span> Threshold Cutoff</h4>
+                        <p>The dynamically calibrated boundary. Samples below are considered Cache Hits (L1/L2), while those above are DRAM Cache Misses.</p>
+                    </div>
+                    <div class="help-item">
+                        <h4><span class="color-dot" style="background:${c.blue}"></span> Avg Latency</h4>
+                        <p>The average access latency of the current environment. Reflects the overall system scheduling pressure and noise level.</p>
+                    </div>
+                `;
+            }
         }
 
         function exportChart(id) {
@@ -244,13 +303,6 @@
             link.download = `axium_${id}_${new Date().getTime()}.png`;
             link.href = canvas.toDataURL('image/png', 1.0);
             link.click();
-        }
-
-        function updateSidebarColors(c) {
-            document.querySelector('#help-winner-title .color-dot').style.backgroundColor = c.red;
-            document.querySelector('#help-hit-title .color-dot').style.backgroundColor = c.green;
-            document.querySelector('#help-miss-title .color-dot').style.backgroundColor = c.blue;
-            document.querySelector('#help-threshold-title .color-dot').style.backgroundColor = c.mauve;
         }
 
         function toggleTheme() {
@@ -286,161 +338,312 @@
                     })
                     .catch(err => {
                         console.error('Failed to auto-load report:', err);
-                        alert('Note: Browser security policies might block automatic loading of local files.\n\nIf the dashboard is empty, please use the "Import Dataset" button to manually select the report file:\n' + reportUrl);
                     });
             }
         });
 
         function renderDashboard(data) {
             const c = getColors();
-            updateSidebarColors(c);
+            const isWatch = data.type === 'watch';
+            updateSidebar(isWatch, c);
 
-            document.getElementById('stat-threshold').textContent = data.effective_threshold;
-            document.getElementById('stat-winner').textContent = data.winner_idx === -1 ? "NULL" : `#${data.winner_idx}`;
-            document.getElementById('stat-gap').textContent = data.gap;
+            let stats = { threshold: 0, winner: '', intensity: '', conf: 0, extra1: '', extra2: '', extra1Label: '', extra2Label: '' };
 
-            const hits = data.timings.filter(t => t <= data.effective_threshold).length;
-            const threshold = data.effective_threshold;
+            if (isWatch) {
+                const maxHits = Math.max(...data.hit_counts);
+                const hotIdx = data.hit_counts.indexOf(maxHits);
+                const avgHits = data.total_hits / data.count;
+                const entropy = calculateEntropy(data.hit_counts);
+                const maxEntropy = Math.log2(data.count);
 
-            // Confidence: Gap relative to threshold, penalized by multiple hits
-            let score = 0;
-            if (data.winner_idx !== -1 && threshold > 0) {
-                // Base score from gap magnitude
-                const gapRatio = data.gap / threshold;
-                score = Math.min(100, gapRatio * 150);
+                stats.threshold = data.threshold;
+                stats.winner = maxHits > 0 ? `#${hotIdx}` : "NONE";
+                stats.intensity = data.total_hits;
 
-                // Penalize if there are multiple hits (signal should be unique)
-                if (hits > 1) {
-                    score = score * (1.0 / Math.log2(hits + 1));
+                const peakRatio = maxHits / (avgHits || 1);
+                const entropyScore = 1 - (entropy / maxEntropy);
+                stats.conf = Math.round(Math.min(100, (peakRatio * 5) * entropyScore));
+
+                stats.extra1 = avgHits.toFixed(2);
+                stats.extra1Label = 'AVG NOISE FLOOR';
+                stats.extra2 = entropy.toFixed(3) + ' bits';
+                stats.extra2Label = 'SIGNAL ENTROPY';
+
+                document.querySelector('.stat-card:nth-child(2) h3').textContent = 'HOTTEST INDEX';
+                document.querySelector('.stat-card:nth-child(3) h3').textContent = 'TOTAL HITS';
+            } else {
+                stats.threshold = data.effective_threshold;
+                stats.winner = data.winner_idx === -1 ? "NULL" : `#${data.winner_idx}`;
+                stats.intensity = data.gap;
+
+                const avgLatency = data.timings.reduce((a,b)=>a+b,0) / data.count;
+                const hits = data.timings.filter(t => t <= data.effective_threshold).length;
+
+                let score = 0;
+                if (data.winner_idx !== -1 && data.effective_threshold > 0) {
+                    const gapRatio = data.gap / data.effective_threshold;
+                    score = Math.min(100, gapRatio * 150);
+                    if (hits > 1) score = score * (1.0 / Math.log2(hits + 1));
                 }
+                stats.conf = Math.round(Math.max(0, Math.min(100, score)));
 
-                // Ensure winner is actually below threshold
-                if (data.winner_val > threshold) {
-                    score = score * 0.1;
-                }
+                stats.extra1 = Math.round(avgLatency) + ' cyc';
+                stats.extra1Label = 'AVG LATENCY';
+                stats.extra2 = hits;
+                stats.extra2Label = 'VALID HITS';
+
+                document.querySelector('.stat-card:nth-child(2) h3').textContent = 'SIGNAL WINNER';
+                document.querySelector('.stat-card:nth-child(3) h3').textContent = 'GAP MAGNITUDE';
             }
 
-            score = Math.round(Math.max(0, Math.min(100, score)));
-            document.getElementById('stat-conf').textContent = score + "%";
-            document.getElementById('conf-fill').style.width = score + "%";
+            document.getElementById('stat-threshold').textContent = stats.threshold;
+            document.getElementById('stat-winner').textContent = stats.winner;
+            document.getElementById('stat-gap').textContent = stats.intensity;
+            document.getElementById('stat-conf').textContent = stats.conf + "%";
+            document.getElementById('conf-fill').style.width = stats.conf + "%";
+
+            const e1 = document.getElementById('stat-extra-1');
+            e1.textContent = stats.extra1;
+            e1.previousElementSibling.textContent = stats.extra1Label;
+
+            const e2 = document.getElementById('stat-extra-2');
+            e2.textContent = stats.extra2;
+            e2.previousElementSibling.textContent = stats.extra2Label;
 
             Object.values(charts).forEach(chart => chart.destroy());
 
             const baseOptions = {
                 responsive: true, maintainAspectRatio: false,
-                interaction: { mode: 'index', intersect: false },
+                animation: { duration: 1200, easing: 'easeOutQuart' },
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
                 plugins: {
                     legend: { display: true, labels: { color: c.text, font: { family: 'JetBrains Mono', size: 11, weight: '700' } } },
                     tooltip: { enabled: true, backgroundColor: 'rgba(0,0,0,0.85)', titleFont: { family: 'JetBrains Mono' }, bodyFont: { family: 'JetBrains Mono' } }
                 },
                 scales: {
-                    y: {
-                        title: { display: true, text: 'LATENCY (CYCLES)', color: c.subtext, font: { family: 'JetBrains Mono', size: 12, weight: '800' } },
-                        grid: { color: c.overlay + '33' }, ticks: { color: c.subtext, font: { family: 'JetBrains Mono' } }
-                    },
-                    x: {
-                        title: { display: true, text: 'SAMPLE INDEX', color: c.subtext, font: { family: 'JetBrains Mono', size: 12, weight: '800' } },
-                        grid: { color: c.overlay + '33' }, ticks: { color: c.subtext, font: { family: 'JetBrains Mono' } }
-                    }
+                    y: { grid: { color: c.overlay + '22' }, ticks: { color: c.subtext, font: { family: 'JetBrains Mono' } } },
+                    x: { grid: { color: c.overlay + '22' }, ticks: { color: c.subtext, font: { family: 'JetBrains Mono' } } }
                 }
             };
 
-            // 1. Main Timeline
+            if (isWatch) {
+                renderWatchCharts(data, c, baseOptions);
+            } else {
+                renderTimingCharts(data, c, baseOptions);
+            }
+        }
+
+        function renderWatchCharts(data, c, baseOptions) {
+            const alpha = '44';
+
+            // 1. Heatmap: Staggered "Wave" rise
+            charts.main = new Chart(document.getElementById('mainChart'), {
+                type: 'bar',
+                data: {
+                    labels: data.hit_counts.map((_, i) => i),
+                    datasets: [{
+                        label: 'HIT INTENSITY', data: data.hit_counts,
+                        backgroundColor: data.hit_counts.map(h => h === Math.max(...data.hit_counts) && h > 0 ? c.red + alpha : c.blue + alpha),
+                        borderColor: data.hit_counts.map(h => h === Math.max(...data.hit_counts) && h > 0 ? c.red : c.blue),
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    ...baseOptions,
+                    animation: {
+                        y: { duration: 2000, from: 0 },
+                        delay: (ctx) => ctx.dataIndex * 10
+                    },
+                    scales: {
+                        ...baseOptions.scales,
+                        x: { ...baseOptions.scales.x, title: { display: true, text: 'MEMORY LINE INDEX', color: c.subtext, font: { family: 'JetBrains Mono', weight: '700' } } },
+                        y: { ...baseOptions.scales.y, title: { display: true, text: 'HIT COUNT', color: c.subtext, font: { family: 'JetBrains Mono', weight: '700' } } }
+                    },
+                    plugins: { ...baseOptions.plugins, title: { display: true, text: 'CROSS-PROCESS ACCESS HEATMAP', color: c.blue, font: { family: 'JetBrains Mono', size: 20, weight: '800' } } }
+                }
+            });
+
+            // 2. Polar: Radial "Elastic" expansion
+            const topIndices = data.hit_counts.map((h, i) => ({h, i})).filter(x => x.h > 0).sort((a, b) => b.h - a.h).slice(0, 10);
+            const palette = [c.red, c.mauve, c.blue, c.green, c.lavender];
+
+            charts.scatter = new Chart(document.getElementById('scatterChart'), {
+                type: 'polarArea',
+                data: {
+                    labels: topIndices.map(x => `Index ${x.i}`),
+                    datasets: [{
+                        data: topIndices.map(x => x.h),
+                        backgroundColor: topIndices.map((_, i) => palette[i % 5] + alpha),
+                        borderColor: topIndices.map((_, i) => palette[i % 5]),
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    ...baseOptions,
+                    animation: {
+                        animateRotate: true,
+                        animateScale: true,
+                        duration: 2000,
+                        easing: 'easeOutQuart'
+                    },
+                    scales: { r: { ticks: { display: false }, grid: { color: c.overlay + '22' }, pointLabels: { display: true, centerPointLabels: true, font: { family: 'JetBrains Mono' }, color: c.subtext } } },
+                    plugins: { ...baseOptions.plugins, title: { display: true, text: 'LEAK TOP 10 RATIO', color: c.blue, font: { family: 'JetBrains Mono', size: 18, weight: '800' } } }
+                }
+            });
+
+            // 3. Density: Smooth "Fluid" wave
+            charts.dist = new Chart(document.getElementById('distChart'), {
+                type: 'line',
+                data: {
+                    labels: data.hit_counts.map((_, i) => i),
+                    datasets: [{
+                        label: 'PROBABILITY DENSITY', data: data.hit_counts.map(h => h / (data.total_hits || 1)),
+                        borderColor: c.green, backgroundColor: c.green + alpha, fill: true, tension: 0.4, borderWidth: 3
+                    }]
+                },
+                options: {
+                    ...baseOptions,
+                    animation: {
+                        y: { duration: 1500, from: 200 }
+                    },
+                    scales: {
+                        ...baseOptions.scales,
+                        x: { ...baseOptions.scales.x, title: { display: true, text: 'MEMORY LINE INDEX', color: c.subtext, font: { family: 'JetBrains Mono', weight: '700' } } },
+                        y: { ...baseOptions.scales.y, title: { display: true, text: 'PROBABILITY', color: c.subtext, font: { family: 'JetBrains Mono', weight: '700' } } }
+                    },
+                    plugins: { ...baseOptions.plugins, title: { display: true, text: 'SIGNAL PROBABILITY DENSITY', color: c.blue, font: { family: 'JetBrains Mono', size: 18, weight: '800' } } }
+                }
+            });
+
+            // 4. CDF: Progressive "Progress" draw
+            let sum = 0;
+            charts.cdf = new Chart(document.getElementById('cdfChart'), {
+                type: 'line',
+                data: {
+                    labels: data.hit_counts.map((_, i) => i),
+                    datasets: [{
+                        label: 'CUMULATIVE SIGNAL STRENGTH', data: data.hit_counts.map(h => sum += h),
+                        borderColor: c.mauve, backgroundColor: c.mauve + alpha, fill: true, pointRadius: 0, borderWidth: 3
+                    }]
+                },
+                options: {
+                    ...baseOptions,
+                    animation: {
+                        x: { type: 'number', duration: 2500, from: 0 }
+                    },
+                    scales: {
+                        ...baseOptions.scales,
+                        x: { ...baseOptions.scales.x, title: { display: true, text: 'MEMORY LINE INDEX', color: c.subtext, font: { family: 'JetBrains Mono', weight: '700' } } },
+                        y: { ...baseOptions.scales.y, title: { display: true, text: 'ACCUMULATED HITS', color: c.subtext, font: { family: 'JetBrains Mono', weight: '700' } } }
+                    },
+                    plugins: { ...baseOptions.plugins, title: { display: true, text: 'CUMULATIVE SIGNAL GROWTH', color: c.blue, font: { family: 'JetBrains Mono', size: 20, weight: '800' } } }
+                }
+            });
+        }
+
+        function renderTimingCharts(data, c, baseOptions) {
+            const alpha = '44';
+
+            // 1. Stream: Sequential "Flow"
             charts.main = new Chart(document.getElementById('mainChart'), {
                 type: 'line',
                 data: {
                     labels: data.timings.map((_, i) => i),
                     datasets: [{
                         label: 'LATENCY STREAM', data: data.timings,
-                        borderColor: c.blue, backgroundColor: c.blue + '33',
-                        fill: true, tension: 0.1, borderWidth: 2,
+                        borderColor: c.blue, backgroundColor: c.blue + alpha,
+                        fill: true, tension: 0.1, borderWidth: 3,
                         pointRadius: 3,
                         pointBackgroundColor: data.timings.map((t, i) =>
-                            i === data.winner_idx ? c.red : (t <= data.effective_threshold ? c.green + '88' : c.blue + '88'))
+                            i === data.winner_idx ? c.red : (t <= data.effective_threshold ? c.green : c.blue))
                     }, {
                         label: 'SIGNAL THRESHOLD', data: new Array(data.count).fill(data.effective_threshold),
                         borderColor: c.mauve, borderDash: [6, 4], borderWidth: 2, pointRadius: 0, fill: false
-                    }, {
-                        label: 'WINNER CANDIDATE', data: [], backgroundColor: c.red, pointRadius: 5
                     }]
                 },
-                options: { ...baseOptions, plugins: { ...baseOptions.plugins, title: { display: true, text: 'TIMING FLOW SEQUENCE', color: c.blue, font: { family: 'JetBrains Mono', size: 20, weight: '800' } } } }
+                options: {
+                    ...baseOptions,
+                    animation: {
+                        x: { type: 'number', duration: 2000, from: 0 }
+                    },
+                    scales: {
+                        ...baseOptions.scales,
+                        x: { ...baseOptions.scales.x, title: { display: true, text: 'SAMPLE INDEX', color: c.subtext, font: { family: 'JetBrains Mono', weight: '700' } } },
+                        y: { ...baseOptions.scales.y, title: { display: true, text: 'LATENCY (CYCLES)', color: c.subtext, font: { family: 'JetBrains Mono', weight: '700' } } }
+                    },
+                    plugins: { ...baseOptions.plugins, title: { display: true, text: 'TIMING FLOW SEQUENCE', color: c.blue, font: { family: 'JetBrains Mono', size: 20, weight: '800' } } }
+                }
             });
 
-            // 2. Scatter
+            // 2. Scatter: Particle "Drop"
             const hitPoints = data.timings.map((t, i) => t <= data.effective_threshold ? { x: i, y: t } : null).filter(p => p);
             const missPoints = data.timings.map((t, i) => t > data.effective_threshold ? { x: i, y: t } : null).filter(p => p);
 
             charts.scatter = new Chart(document.getElementById('scatterChart'), {
                 type: 'scatter',
                 data: {
-                    datasets: [{
-                        label: 'CACHE MISSES',
-                        data: missPoints,
-                        backgroundColor: c.blue + '88',
-                        pointRadius: 5
-                    }, {
-                        label: 'CACHE HITS',
-                        data: hitPoints,
-                        backgroundColor: c.green + '88',
-                        pointRadius: 6
-                    }]
+                    datasets: [{ label: 'CACHE MISSES', data: missPoints, backgroundColor: c.blue + alpha, borderColor: c.blue, borderWidth: 1, pointRadius: 5 },
+                               { label: 'CACHE HITS', data: hitPoints, backgroundColor: c.green + alpha, borderColor: c.green, borderWidth: 1, pointRadius: 6 }]
                 },
                 options: {
                     ...baseOptions,
-                    plugins: { ...baseOptions.plugins, title: { display: true, text: 'SCATTER DENSITY MAP', color: c.blue, font: { family: 'JetBrains Mono', size: 20, weight: '800' } } },
-                    animation: { y: { type: 'number', duration: 1200, from: -100, delay: (ctx) => ctx.dataIndex * 4 } }
-                }
-            });
-
-            // 3. Distribution
-            charts.dist = new Chart(document.getElementById('distChart'), {
-                type: 'bar',
-                data: {
-                    labels: Object.keys(data.timings.reduce((acc, t) => {
-                        const b = Math.floor(t/10)*10; acc[b] = (acc[b]||0)+1; return acc;
-                    }, {})).sort((a,b)=>a-b),
-                    datasets: [{
-                        label: 'LATENCY FREQUENCY',
-                        data: Object.values(data.timings.reduce((acc, t) => {
-                            const b = Math.floor(t/10)*10; acc[b] = (acc[b]||0)+1; return acc;
-                        }, {})),
-                        backgroundColor: c.blue + '99', borderColor: c.blue, borderWidth: 1
-                    }]
-                },
-                options: {
-                    ...baseOptions,
+                    animation: {
+                        y: { duration: 1000, from: 0 },
+                        delay: (ctx) => ctx.dataIndex * 2
+                    },
                     scales: {
                         ...baseOptions.scales,
-                        x: { ...baseOptions.scales.x, title: { display: true, text: 'LATENCY BINS', color: c.subtext, font: { family: 'JetBrains Mono', size: 12, weight: '800' } } }
+                        x: { ...baseOptions.scales.x, title: { display: true, text: 'SAMPLE INDEX', color: c.subtext, font: { family: 'JetBrains Mono', weight: '700' } } },
+                        y: { ...baseOptions.scales.y, title: { display: true, text: 'LATENCY (CYCLES)', color: c.subtext, font: { family: 'JetBrains Mono', weight: '700' } } }
                     },
-                    plugins: { ...baseOptions.plugins, title: { display: true, text: 'POPULATION HISTOGRAM', color: c.blue, font: { family: 'JetBrains Mono', size: 20, weight: '800' } } },
-                    animation: { delay: (ctx) => ctx.dataIndex * 50 }
+                    plugins: { ...baseOptions.plugins, title: { display: true, text: 'SCATTER DENSITY MAP', color: c.blue, font: { family: 'JetBrains Mono', size: 20, weight: '800' } } }
                 }
             });
 
-            // 4. CDF
+            // 3. Histogram: Block "Growth"
+            const bins = data.timings.reduce((acc, t) => { const b = Math.floor(t/10)*10; acc[b] = (acc[b]||0)+1; return acc; }, {});
+            const binLabels = Object.keys(bins).sort((a,b)=>a-b);
+
+            charts.dist = new Chart(document.getElementById('distChart'), {
+                type: 'bar',
+                data: { labels: binLabels, datasets: [{ label: 'LATENCY FREQUENCY', data: binLabels.map(l => bins[l]), backgroundColor: c.blue + alpha, borderColor: c.blue, borderWidth: 2 }] },
+                options: {
+                    ...baseOptions,
+                    animation: {
+                        delay: (ctx) => ctx.dataIndex * 40
+                    },
+                    scales: {
+                        ...baseOptions.scales,
+                        x: { ...baseOptions.scales.x, title: { display: true, text: 'LATENCY BINS (CYCLES)', color: c.subtext, font: { family: 'JetBrains Mono', weight: '700' } } },
+                        y: { ...baseOptions.scales.y, title: { display: true, text: 'SAMPLE COUNT', color: c.subtext, font: { family: 'JetBrains Mono', weight: '700' } } }
+                    },
+                    plugins: { ...baseOptions.plugins, title: { display: true, text: 'POPULATION HISTOGRAM', color: c.blue, font: { family: 'JetBrains Mono', size: 20, weight: '800' } } }
+                }
+            });
+
+            // 4. CDF: Step "Climb"
             const sortedTimings = [...data.timings].sort((a,b)=>a-b);
             charts.cdf = new Chart(document.getElementById('cdfChart'), {
                 type: 'line',
-                data: {
-                    datasets: [{
-                        label: 'PROBABILITY CDF', data: sortedTimings.map((v, i) => ({ x: v, y: (i + 1) / data.count })),
-                        borderColor: c.mauve, backgroundColor: c.mauve + '25', fill: true, pointRadius: 0, borderWidth: 3, stepped: true
-                    }]
-                },
+                data: { datasets: [{ label: 'PROBABILITY CDF', data: sortedTimings.map((v, i) => ({ x: v, y: (i + 1) / data.count })), borderColor: c.mauve, backgroundColor: c.mauve + alpha, fill: true, pointRadius: 0, borderWidth: 3, stepped: true }] },
                 options: {
                     ...baseOptions,
                     scales: {
-                        ...baseOptions.scales,
-                        x: { ...baseOptions.scales.x, type: 'linear', title: { display: true, text: 'LATENCY (CYCLES)', color: c.subtext, font: { family: 'JetBrains Mono', size: 12, weight: '800' } } },
-                        y: { ...baseOptions.scales.y, max: 1, title: { display: true, text: 'PROBABILITY (0-1)', color: c.subtext, font: { family: 'JetBrains Mono', size: 12, weight: '800' } } }
+                        x: { type: 'linear', title: { display: true, text: 'LATENCY (CYCLES)', color: c.subtext, font: { family: 'JetBrains Mono', weight: '700' } } },
+                        y: { max: 1, title: { display: true, text: 'PROBABILITY (0.0 - 1.0)', color: c.subtext, font: { family: 'JetBrains Mono', weight: '700' } } }
                     },
-                    plugins: { ...baseOptions.plugins, title: { display: true, text: 'CUMULATIVE DENSITY FUNCTION', color: c.blue, font: { family: 'JetBrains Mono', size: 20, weight: '800' } } },
-                    animation: { x: { duration: 2500, from: 0 } }
+                    animation: { duration: 2000 },
+                    plugins: { ...baseOptions.plugins, title: { display: true, text: 'CUMULATIVE DENSITY FUNCTION', color: c.blue, font: { family: 'JetBrains Mono', size: 20, weight: '800' } } }
                 }
             });
         }
+
+
+
+
     </script>
 </body>
 </html>
