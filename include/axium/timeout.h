@@ -1,11 +1,14 @@
 /**
  * @file timeout.h
  *
- * Provides timeout management utilities.
+ * @brief Provides timeout management utilities.
  */
 
 #ifndef AXIUM_TIMEOUT_H
 #define AXIUM_TIMEOUT_H
+
+#include <stdbool.h>
+#include <unistd.h>
 
 /** Constant representing infinite timeout. */
 #define TIMEOUT_FOREVER ((double)-1.0)
@@ -23,4 +26,28 @@
  */
 double timeout_now(void);
 
-#endif // AXIUM_TIMEOUT_H
+/**
+ * @brief Waits for a condition to be met or until a timeout occurs.
+ *
+ * @param cond_expr   Condition expression.
+ * @param timeout_sec Timeout in seconds.
+ * @param sleep_usec  Sleep time in microseconds.
+ * @return true if met, false on timeout.
+ */
+#define wait_until(cond_expr, timeout_sec, sleep_usec)                         \
+  ({                                                                           \
+    double __start = timeout_now();                                            \
+    bool __res = false;                                                        \
+    while (timeout_now() - __start < (double)(timeout_sec)) {                  \
+      if (cond_expr) {                                                         \
+        __res = true;                                                          \
+        break;                                                                 \
+      }                                                                        \
+      if ((sleep_usec) > 0) {                                                  \
+        usleep(sleep_usec);                                                    \
+      }                                                                        \
+    }                                                                          \
+    __res;                                                                     \
+  })
+
+#endif /* AXIUM_TIMEOUT_H */
