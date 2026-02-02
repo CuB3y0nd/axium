@@ -90,8 +90,7 @@ int cache_export_report(const cache_report_t *report, const char *filename);
  * @return 0 on success, -1 on failure.
  */
 int cache_export_watch_report(const cache_watch_report_t *report,
-                              const char *filename)
-    __attribute__((nonnull(1, 2)));
+                              const char *filename);
 
 /**
  * @brief Opens the visualization tool to view a specific report.

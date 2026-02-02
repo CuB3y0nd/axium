@@ -6,7 +6,7 @@
 
 void cache_report(const cache_report_t *report) {
   if (!report)
-    return;
+    log_error("cache_report: Invalid argument.");
 
   /* Calculate adaptive widths for formatting */
   int idx_width = 1;
@@ -107,7 +107,7 @@ void cache_watch_reporter(size_t index, uint64_t cycles, void *user_data) {
 void cache_watch_report_init(cache_watch_report_t *report, uint64_t *hit_counts,
                              size_t count, uint64_t threshold) {
   if (!report || !hit_counts)
-    return;
+    log_error("cache_watch_report_init: Invalid arguments.");
 
   report->hit_counts = hit_counts;
   report->count = count;
@@ -122,7 +122,7 @@ void cache_watch_report_init(cache_watch_report_t *report, uint64_t *hit_counts,
 void cache_analyze(cache_report_t *report, uint64_t *timings, size_t count,
                    uint64_t threshold) {
   if (!report || !timings || count == 0)
-    return;
+    log_error("cache_analyze: Invalid arguments.");
 
   report->timings = timings;
   report->count = count;
@@ -177,12 +177,11 @@ void cache_analyze(cache_report_t *report, uint64_t *timings, size_t count,
 
 int cache_export_report(const cache_report_t *report, const char *filename) {
   if (!report || !report->timings || !filename)
-    return -1;
+    log_error("cache_export_report: Invalid arguments.");
 
   FILE *f = fopen(filename, "w");
-  if (!f) {
+  if (!f)
     log_error("Failed to open file for export: %s", filename);
-  }
 
   fprintf(f, "{\n");
   fprintf(f, "  \"threshold\": %lu,\n", report->threshold);
@@ -209,12 +208,11 @@ int cache_export_report(const cache_report_t *report, const char *filename) {
 int cache_export_watch_report(const cache_watch_report_t *report,
                               const char *filename) {
   if (!report || !filename)
-    return -1;
+    log_error("cache_export_watch_report: Invalid arguments.");
 
   FILE *f = fopen(filename, "w");
-  if (!f) {
+  if (!f)
     log_error("Failed to open file for export: %s", filename);
-  }
 
   fprintf(f, "{\n");
   fprintf(f, "  \"type\": \"watch\",\n");
@@ -237,7 +235,7 @@ int cache_export_watch_report(const cache_watch_report_t *report,
 
 void cache_view_report(const char *filename) {
   if (!filename)
-    log_error("filename cannot be NULL");
+    log_error("cache_view_report: Invalid argument.");
 
   char cmd[2048];
 
@@ -253,21 +251,18 @@ void cache_view_report(const char *filename) {
     }
   }
 
-  if (!found_tool) {
+  if (!found_tool)
     log_error("Could not find tools/cache_vis.html visualization tool.");
-  }
 
   /* Get absolute path for the report */
   char abs_report[512];
-  if (!realpath(filename, abs_report)) {
+  if (!realpath(filename, abs_report))
     log_error("Failed to resolve absolute path for report: %s", filename);
-  }
 
   /* Get absolute path for the tool */
   char abs_tool[512];
-  if (!realpath(found_tool, abs_tool)) {
+  if (!realpath(found_tool, abs_tool))
     log_error("Failed to resolve absolute path for tool: %s", found_tool);
-  }
 
   log_status("Opening visualization tool...");
 
@@ -284,7 +279,6 @@ void cache_view_report(const char *filename) {
            abs_report);
 #endif
 
-  if (system(cmd) != 0) {
+  if (system(cmd) != 0)
     log_error("Failed to execute open command.");
-  }
 }

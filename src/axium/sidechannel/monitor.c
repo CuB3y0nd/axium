@@ -25,10 +25,21 @@ static void _watch_internal_sigint_handler(int sig) {
 
 void cache_watch_install_handler(const cache_watch_report_t *report,
                                  const char *filename) {
+  if (!report || !filename) {
+    log_error("cache_watch_install_handler: Invalid arguments.");
+  }
   _watch_sig_ctx.report = report;
+  memset(_watch_sig_ctx.filename, 0, sizeof(_watch_sig_ctx.filename));
   strncpy(_watch_sig_ctx.filename, filename,
           sizeof(_watch_sig_ctx.filename) - 1);
-  signal(SIGINT, _watch_internal_sigint_handler);
+
+  struct sigaction sa;
+  sa.sa_handler = _watch_internal_sigint_handler;
+  sigemptyset(&sa.sa_mask);
+  sa.sa_flags = 0;
+  if (sigaction(SIGINT, &sa, NULL) == -1) {
+    log_error("Failed to install SIGINT handler.");
+  }
 }
 
 cache_watch_config cache_watch_config_init(uint64_t threshold, size_t count,
@@ -43,6 +54,9 @@ cache_watch_config cache_watch_config_init(uint64_t threshold, size_t count,
 }
 
 int cache_audit(const void *target, uint64_t threshold) {
+  if (!target)
+    return -1;
+
   clflush(target);
   mfence();
   uint64_t start = probe_start();
@@ -58,11 +72,20 @@ int cache_audit(const void *target, uint64_t threshold) {
 
 void cache_watch(const void *base, const cache_watch_config *config,
                  cache_hit_cb callback, void *user_data) {
+  if (!base || !config) {
+    log_error("cache_watch: Invalid arguments.");
+  }
+
   const char *restrict ptr = (const char *)base;
   const size_t count = config->count;
   const size_t stride = config->stride;
   const uint64_t threshold = config->threshold;
   const int wait_cycles = config->wait_cycles;
+
+  /* MIXED_IDX requires count to be a power of two */
+  if (count == 0 || (count & (count - 1)) != 0) {
+    log_error("cache_watch: 'count' (%zu) must be a power of two.", count);
+  }
 
   if (!callback) {
     callback = cache_watch_reporter;

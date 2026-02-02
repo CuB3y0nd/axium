@@ -49,7 +49,7 @@ cache_watch_config cache_watch_config_init(uint64_t threshold, size_t count,
  * @return 0 if the environment is suitable, -1 if the audit fails.
  */
 int cache_audit(const void *target, uint64_t threshold)
-    __attribute__((warn_unused_result, nonnull(1)));
+    __attribute__((warn_unused_result));
 
 /**
  * @brief Watches a memory region for cache access events (Flush + Reload).
@@ -63,7 +63,7 @@ int cache_audit(const void *target, uint64_t threshold)
  */
 void cache_watch(const void *base, const cache_watch_config *config,
                  cache_hit_cb callback, void *user_data)
-    __attribute__((hot, flatten, nonnull(1, 2)));
+    __attribute__((hot, flatten));
 
 /**
  * @brief Installs a default signal handler for SIGINT (Ctrl+C).
@@ -75,7 +75,6 @@ void cache_watch(const void *base, const cache_watch_config *config,
  * @param filename Output filename for the JSON report.
  */
 void cache_watch_install_handler(const cache_watch_report_t *report,
-                                 const char *filename)
-    __attribute__((nonnull(1, 2)));
+                                 const char *filename);
 
 #endif /* AXIUM_SIDECHANNEL_MONITOR_H */

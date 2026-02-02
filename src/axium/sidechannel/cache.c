@@ -16,8 +16,9 @@ uint64_t cache_calibrate_threshold(const void *target) {
   } else {
     /* Fallback to heap allocation to avoid stack noise */
     cal_buf = (uint8_t *)malloc(4096);
-    if (!cal_buf)
+    if (!cal_buf) {
       log_error("malloc failed");
+    }
     for (int i = 0; i < 4096; i++)
       cal_buf[i] = (uint8_t)i;
     is_local = true;
