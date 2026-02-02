@@ -16,6 +16,7 @@
 /* Common standard headers */
 #include <assert.h>
 #include <fcntl.h>
+#include <semaphore.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -34,11 +35,13 @@ extern "C" {
 
 /* Axium modules */
 #include <axium/log.h>
+#include <axium/oracle.h>
 #include <axium/shellcraft/common.h>
 #include <axium/shellcraft/snippets.h>
 #include <axium/sidechannel/cache.h>
 #include <axium/sidechannel/cpu.h>
 #include <axium/sidechannel/monitor.h>
+#include <axium/sidechannel/oracle.h>
 #include <axium/sidechannel/visualization/report.h>
 #include <axium/timeout.h>
 #include <axium/tubes/process.h>
