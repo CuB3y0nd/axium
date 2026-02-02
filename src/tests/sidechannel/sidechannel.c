@@ -8,6 +8,10 @@ void test_dynamic_line_size(void) {
 }
 
 void test_context_aware_calibration(void) {
+  /* Test with NULL (local allocation) */
+  uint64_t t0 = cache_calibrate_threshold(NULL);
+  log_info("Local calibration threshold: %lu", t0);
+
   /* Test on stack */
   int x = 42;
   uint64_t t1 = cache_calibrate_threshold(&x);
@@ -18,7 +22,7 @@ void test_context_aware_calibration(void) {
   uint64_t t2 = cache_calibrate_threshold(p);
   log_info("Heap calibration threshold:  %lu", t2);
 
-  ASSERT_TRUE(t1 > 0 && t2 > 0, "Calibration returns non-zero");
+  ASSERT_TRUE(t0 > 0 && t1 > 0 && t2 > 0, "Calibration returns non-zero");
   free(p);
 }
 
