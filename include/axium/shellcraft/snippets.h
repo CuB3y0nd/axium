@@ -9,6 +9,7 @@
 
 #include <axium/shellcraft/common.h>
 #include <axium/utils/payload.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,6 +30,17 @@ extern "C" {
  * @param cc Address of commit_creds.
  */
 void ksc_escalate(payload_t *p, uint64_t pkc, uint64_t cc);
+
+/**
+ * Kernel: Disables seccomp for the current task by clearing the TIF_SECCOMP bit
+ * at a given offset of the `current_task` structure.
+ *
+ * @param p Pointer to the payload.
+ * @param task_struct_offset Offset of the `current_task` structure.
+ * @param tif_seccomp_bit Bit index to clear (not a mask).
+ */
+void ksc_unseccomp(payload_t *p, uint64_t task_struct_offset,
+                   uint64_t tif_seccomp_bit);
 
 /** @} */
 

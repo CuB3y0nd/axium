@@ -1,3 +1,4 @@
+#include "axium/shellcraft/snippets.h"
 #include "../test_common.h"
 #include <axium/axium.h>
 #include <axium/shellcraft/ext/template.h>
