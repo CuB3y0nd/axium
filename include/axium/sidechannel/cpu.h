@@ -33,4 +33,19 @@ _CPU_INLINE void set_cpu_affinity(int cpu_core) {
 
 #undef _CPU_INLINE
 
+/**
+ * @brief Busy-wait for a specific number of iterations using the 'pause' 
+ * instruction.
+ *
+ * This provides a more consistent delay than a simple 'for' loop and is
+ * less likely to be optimized away or overly accelerated by the CPU.
+ *
+ * @param cycles Number of pause iterations.
+ */
+static inline __attribute__((always_inline)) void delay_cycles(size_t cycles) {
+  for (size_t i = 0; i < cycles; i++) {
+    __asm__ __volatile__("pause" ::: "memory");
+  }
+}
+
 #endif // AXIUM_SIDECHANNEL_CPU_H
