@@ -42,6 +42,7 @@ extern "C" {
 #include <axium/sidechannel/cpu.h>
 #include <axium/sidechannel/monitor.h>
 #include <axium/sidechannel/oracle.h>
+#include <axium/sidechannel/spectre.h>
 #include <axium/sidechannel/visualization/report.h>
 #include <axium/timeout.h>
 #include <axium/tubes/process.h>
